@@ -56,7 +56,6 @@
         optgroup option { font-weight: normal; color: #333; padding: 4px; }
         textarea { resize: vertical; min-height: 110px; }
 
-        /* Dynamic Category Section Styling */
         .dynamic-section {
             background: #fdf8f8;
             border: 1px dashed #e0b0b0;
@@ -75,7 +74,6 @@
             padding-bottom: 5px;
         }
 
-        /* Score Badge Component */
         .score-badge {
             background: #fff3f3;
             border: 1px solid #ffcccc;
@@ -252,15 +250,13 @@
     </div>
 
     <script>
-        // Official Institutional Category 3 Score Matrix Object Dataset Lookup
         const scoreMatrix = {
-            single:          { none: 13,  less_1: 18,   "1_3": 23,   "3_5": 28,   "6_10": 33,   more_10: 38 },
-            two:             { none: 9.1, less_1: 12.6, "1_3": 16.1, "3_5": 19.6, "6_10": 23.1, more_10: 26.6 },
+            single:      { none: 13,  less_1: 18,   "1_3": 23,   "3_5": 28,   "6_10": 33,   more_10: 38 },
+            two:         { none: 9.1, less_1: 12.6, "1_3": 16.1, "3_5": 19.6, "6_10": 23.1, more_10: 26.6 },
             first_principal: { none: 9.1, less_1: 12.6, "1_3": 16.1, "3_5": 19.6, "6_10": 23.1, more_10: 26.6 },
-            joint:           { none: 3.9, less_1: 5.4,  "1_3": 6.9,  "3_5": 8.4,  "6_10": 9.9,  more_10: 11.4 }
+            joint:       { none: 3.9, less_1: 5.4,  "1_3": 6.9,  "3_5": 8.4,  "6_10": 9.9,  more_10: 11.4 }
         };
 
-        // Static tracking point fallback definitions for Categories 1 & 2
         const staticPointsMap = {
             cat1_direct: 10, cat1_exam: 5,
             cat2_discipline: 10, cat2_other: 10, cat2_extension: 5, cat2_admin: 20, cat2_committee: 15, cat2_professional: 10
@@ -276,7 +272,6 @@
             
             if (selectedValue === 'cat3_journal') {
                 cat3Section.style.display = 'block';
-                // Enforce input fields requirement context rules when visible
                 document.getElementById('journalName').required = true;
                 document.getElementById('categoryOfJournal').required = true;
                 calculateCategory3Points();
@@ -317,7 +312,6 @@
                 finalPoints = calculateCategory3Points();
                 finalCategoryText = "Category 3: Journal Publication";
                 
-                // Package structural category metrics directly into detail summary blocks
                 const journalDetails = `[Journal: ${document.getElementById('journalName').value} | Cat: ${document.getElementById('categoryOfJournal').value} | Index: ${document.getElementById('typeOfJournal').value} | Date: ${document.getElementById('publicationDate').value} | ISSN: ${document.getElementById('issnNumber').value} | Quartile: ${document.getElementById('scopusQuartile').value} | Link: ${document.getElementById('certificateLink').value}]`;
                 details = journalDetails + (details ? " \n\nAdditional Notes: " + details : "");
             } else {
@@ -331,11 +325,13 @@
                 category: finalCategoryText,
                 title: title,
                 details: details,
-                points: finalPoints
+                // UPDATED: Rounded decimal values to whole numbers to meet strict PostgreSQL INTEGER column criteria
+                points: Math.round(finalPoints)
             };
 
             try {
-                const response = await fetch('http://localhost:3000/api/submit-activity', {
+                // UPDATED: Exchanged the hardcoded localhost URL string for an asset relative routing configuration path
+                const response = await fetch('/api/submit-activity', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -350,11 +346,11 @@
                     document.getElementById('pointDisplayValue').innerText = "0 Points";
                     window.location.href = 'reports.html';
                 } else {
-                    alert("Error submitting request: " + (data.error || "Unknown server response error."));
+                    alert("Error submitting request: " + (data.message || "Unknown server response error."));
                 }
             } catch (err) {
                 console.error("Submission failed: ", err);
-                alert("Could not connect to the backend server API. Please ensure your node server is active.");
+                alert("Could not connect to the backend server API. Please verify your network connection or service availability.");
             }
         }
 
