@@ -229,7 +229,7 @@ app.get('/api/admin/reports/all', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 
 // UPDATED: Added { alter: true } so Sequelize automatically sets up schemas or modifications into your fresh Postgres server instance.
-sequelize.sync({ alter: true }).then(() => {
+sequelize.sync({ force: true }).then(() => {
     app.listen(PORT, () => {
         console.log(`🚀 Server running on port ${PORT}`);
         console.log("📂 PostgreSQL Database Synced and Ready.");
