@@ -59,7 +59,7 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
-// --- 3. SUBMIT ACTIVITY ROUTE ---
+// --- 3. SUBMIT ACTIVITY ROUTE (UPDATED FOR ABSOLUTE SCORE CALCULATION) ---
 app.post('/api/submit-activity', async (req, res) => {
     try {
         const { facultyId, category, title, details, points } = req.body;
@@ -67,6 +67,7 @@ app.post('/api/submit-activity', async (req, res) => {
         const faculty = await Faculty.findByPk(facultyId);
         if (!faculty) return res.status(404).json({ message: "Faculty record not found" });
 
+        // 1. Create submission log
         await Submission.create({
             title: title || "Untitled Academic Work",
             category: category || "General Activity",
@@ -75,10 +76,16 @@ app.post('/api/submit-activity', async (req, res) => {
             FacultyId: facultyId
         });
 
-        faculty.score = (faculty.score || 0) + parseInt(points || 0);
+        // 2. Direct Column Aggregation: Re-calculate complete sum directly from the database
+        const freshCalculatedTotal = await Submission.sum('points', {
+            where: { FacultyId: facultyId }
+        });
+
+        // 3. Persist absolute sum directly into core score property matrix
+        faculty.score = parseInt(freshCalculatedTotal || 0);
         await faculty.save();
 
-        console.log(`✅ Categorized activity entry logged cleanly for ${faculty.fullname}`);
+        console.log(`✅ Activity logged safely for ${faculty.fullname}. Live aggregated score recalculated to: ${faculty.score}`);
         res.json({ success: true, newScore: faculty.score });
     } catch (error) {
         console.error("Activity Submission Endpoint Error:", error);
@@ -228,8 +235,8 @@ app.get('/api/admin/reports/all', async (req, res) => {
 // --- START SERVER WITH DYNAMIC PORT ---
 const PORT = process.env.PORT || 3000;
 
-// UPDATED: Added { alter: true } so Sequelize automatically sets up schemas or modifications into your fresh Postgres server instance.
-sequelize.sync({ force: true }).then(() => {
+// UPDATED: Changed back to { alter: true } so data persists cleanly across future builds without wiping tables.
+sequelize.sync({ alter: true }).then(() => {
     app.listen(PORT, () => {
         console.log(`🚀 Server running on port ${PORT}`);
         console.log("📂 PostgreSQL Database Synced and Ready.");
