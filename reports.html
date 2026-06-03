@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Reports | Faculty Portal</title>
+    <style>
+        :root { 
+            --primary: #003366; 
+            --sidebar: #4a0000; 
+            --accent: #007bff; 
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; margin: 0; display: flex; }
+        
+        /* Sidebar Navigation Layout styling */
+        .sidebar { width: 250px; background: var(--sidebar); color: white; height: 100vh; position: fixed; padding: 20px; box-sizing: border-box; }
+        .logo-box { background: white; padding: 10px; border-radius: 8px; margin-bottom: 30px; text-align: center; color: var(--primary); font-weight: bold; }
+        .nav-item { padding: 12px; color: white; text-decoration: none; display: block; border-radius: 5px; margin-bottom: 5px; }
+        .nav-item:hover, .nav-item.active { background: var(--accent); }
+
+        /* Document Container Spacers */
+        .main-content { margin-left: 250px; flex-grow: 1; padding: 30px; width: calc(100% - 250px); box-sizing: border-box; }
+        .report-card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        
+        /* Flex Alignment Header tracking */
+        .report-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+        h2 { color: var(--primary); margin-top: 0; margin-bottom: 0; }
+        
+        /* Total Score Badge Container with Blink Animation */
+        .score-summary-badge {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeeba;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 800;
+            font-size: 18px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+
+        .score-summary-badge span {
+            color: #dc3545;
+            font-size: 22px;
+            animation: scoreBlink 1.4s infinite alternate;
+        }
+
+        @keyframes scoreBlink {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; transform: scale(1.05); }
+        }
+        
+        /* Download PDF Interactive Component trigger button */
+        .btn-download-pdf { background: #34a853; color: white; border: none; padding: 10px 18px; border-radius: 5px; font-weight: bold; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.15); transition: background 0.2s; }
+        .btn-download-pdf:hover { background: #2d8f47; }
+
+        .category-section { margin-top: 25px; margin-bottom: 10px; }
+        .category-header { 
+            background: #e7f3ff; 
+            color: var(--primary); 
+            padding: 12px 20px; 
+            border-radius: 6px; 
+            font-weight: bold; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            border-left: 5px solid var(--accent); 
+            margin-bottom: 12px;
+        }
+        .category-subtotal { background: var(--primary); color: white; padding: 4px 12px; border-radius: 20px; font-size: 13px; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; background: white; }
+        th { background: #f8f9fa; color: #333; text-align: left; padding: 12px 15px; border-bottom: 2px solid #dee2e6; font-size: 14px; }
+        td { padding: 12px 15px; border-bottom: 1px solid #eee; font-size: 14px; color: #444; vertical-align: middle; }
+        tr:hover { background-color: #f1f7ff; }
+
+        .badge-pts { background: #e2fbd7; color: #34a853; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 13px; }
+        
+        .btn-action { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; margin-right: 5px; color: white; }
+        .btn-edit { background: #ffc107; color: #212529; }
+        .btn-edit:hover { background: #e0a800; }
+        .btn-delete { background: #dc3545; }
+        .btn-delete:hover { background: #bd2130; }
+
+        /* CSS Print Overrides to ensure pristine PDF output compilation */
+        @media print {
+            body { background: #ffffff; display: block; }
+            .sidebar { display: none !important; }
+            .main-content { margin-left: 0 !important; padding: 0 !important; width: 100% !important; }
+            .report-card { box-shadow: none !important; padding: 0 !important; }
+            .btn-download-pdf { display: none !important; }
+            
+            /* Stops the score element from blinking during PDF generation */
+            .score-summary-badge {
+                border: 2px solid #333 !important;
+                background: #f8f9fa !important;
+                color: #000 !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            .score-summary-badge span {
+                animation: none !important;
+                color: #000 !important;
+                font-weight: 900 !important;
+            }
+
+            .category-header { 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+                background: #e7f3ff !important; 
+                border-left: 5px solid #007bff !important;
+            }
+            .category-subtotal { 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+                background: #003366 !important; 
+                color: white !important;
+            }
+            .badge-pts { 
+                -webkit-print-color-adjust: exact; 
+                print-color-adjust: exact; 
+                background: #e2fbd7 !important; 
+                color: #34a853 !important;
+            }
+            /* Strip row actions from print layout */
+            .actions-column-head, .actions-column-cell { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo-box">TECHNO INDIA GROUP JHARKHAND</div>
+        <a href="dashboard.html" class="nav-item">Home</a>
+        <a href="forms.html" class="nav-item">Forms</a>
+        <a href="reports.html" class="nav-item active">Reports</a>
+        <button onclick="logout()" style="width:100%; margin-top:20px; background:#dc3545; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">Logout</button>
+    </div>
+
+    <div class="main-content">
+        <div class="report-card">
+            <div class="report-header-flex">
+                <h2>📜 Category-Wise Activity Report</h2>
+                <button onclick="downloadPDF()" class="btn-download-pdf">📥 Download Report PDF</button>
+            </div>
+            
+            <div class="score-summary-badge">
+                Cumulative API Score: <span id="headerTotalScore">0</span> Pts
+            </div>
+
+            <p style="color: #666; margin-top: 5px;">View, update, or remove your recorded activities below.</p>
+            <hr style="border:0; border-top: 1px solid #eee; margin-bottom: 20px;">
+            
+            <div id="categoryContainer">Loading activity reports...</div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', loadReports);
+
+        async function loadReports() {
+            const userData = localStorage.getItem('facultyUser');
+            if (!userData) { window.location.href = 'login.html'; return; }
+            const user = JSON.parse(userData);
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/reports/${user.id}?t=` + new Date().getTime());
+                const reports = await res.json();
+
+                const container = document.getElementById('categoryContainer');
+                container.innerHTML = ''; 
+
+                if (reports.length === 0) {
+                    container.innerHTML = '<p style="text-align:center; color:#666; padding: 20px;">No verified activities found.</p>';
+                    document.getElementById('headerTotalScore').innerText = '0';
+                    return;
+                }
+
+                let totalCalculatedScore = 0;
+                const groupedData = {};
+                
+                reports.forEach(item => {
+                    const catName = item.category || "General Submissions";
+                    if (!groupedData[catName]) {
+                        groupedData[catName] = { activities: [], subtotal: 0 };
+                    }
+                    groupedData[catName].activities.push(item);
+                    groupedData[catName].subtotal += parseInt(item.points || 0);
+                    totalCalculatedScore += parseInt(item.points || 0);
+                });
+
+                // Updates the header counter item with live calculated sum values
+                document.getElementById('headerTotalScore').innerText = totalCalculatedScore;
+
+                for (const [categoryName, group] of Object.entries(groupedData)) {
+                    let rowsHtml = '';
+                    group.activities.forEach(act => {
+                        // Sanitizing content text safely to avoid breaking JavaScript template parameters
+                        const cleanTitle = (act.title || "Untitled").replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        const cleanDetails = (act.details || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
+
+                        rowsHtml += `
+                            <tr>
+                                <td style="width: 12%;">${new Date(act.createdAt).toLocaleDateString()}</td>
+                                <td style="width: 33%; font-weight: 500; color: #222;">${act.title}</td>
+                                <td style="width: 35%; font-style: italic; color: #555; font-size: 13px;">${act.details || 'No additional metrics specified.'}</td>
+                                <td style="width: 10%;"><span class="badge-pts">+${act.points}</span></td>
+                                <td class="actions-column-cell" style="width: 10%; text-align: right; white-space: nowrap;">
+                                    <button class="btn-action btn-edit" onclick="editEntry(${act.id}, '${cleanTitle}', '${cleanDetails}')">Edit</button>
+                                    <button class="btn-action btn-delete" onclick="deleteEntry(${act.id})">Delete</button>
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    const sectionTemplate = `
+                        <div class="category-section">
+                            <div class="category-header">
+                                <span>📁 ${categoryName}</span>
+                                <span class="category-subtotal">Subtotal: ${group.subtotal} Pts</span>
+                            </div>
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Title of Work</th>
+                                        <th>Additional Details</th>
+                                        <th>Points</th>
+                                        <th class="actions-column-head" style="text-align: right;">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rowsHtml}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                    container.innerHTML += sectionTemplate;
+                }
+            } catch (err) {
+                console.error(err);
+                document.getElementById('categoryContainer').innerHTML = '<p style="color:red; text-align:center;">Failed to connect to server.</p>';
+            }
+        }
+
+        async function deleteEntry(id) {
+            if (!id) {
+                alert("Error: Invalid sequence or empty workspace record reference.");
+                return;
+            }
+
+            if (!confirm("Are you sure you want to permanently delete this activity entry? Your total score will update automatically.")) return;
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/reports/${id}`, { method: 'DELETE' });
+                const result = await res.json();
+
+                if (res.ok) {
+                    alert(result.message || "Entry deleted successfully!");
+                    
+                    const userData = localStorage.getItem('facultyUser');
+                    if (userData) {
+                        const user = JSON.parse(userData);
+                        user.score = parseInt(result.newScore) || 0; 
+                        localStorage.setItem('facultyUser', JSON.stringify(user));
+                    }
+                    
+                    await loadReports(); 
+                } else {
+                    alert("Failed to delete record: " + (result.message || "Server error"));
+                }
+            } catch (err) {
+                console.error("Deletion exception:", err);
+                alert("Connection tracking error or server is offline.");
+            }
+        }
+
+        async function editEntry(id, currentTitle, currentDetails) {
+            const newTitle = prompt("Edit Title of Work:", currentTitle);
+            if (newTitle === null || newTitle.trim() === "") return; 
+            
+            const newDetails = prompt("Edit Additional Details:", currentDetails);
+            if (newDetails === null) return;
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/reports/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: newTitle.trim(), details: newDetails.trim() })
+                });
+
+                if (res.ok) {
+                    alert("Entry modified successfully.");
+                    await loadReports(); 
+                } else {
+                    alert("Failed to update item.");
+                }
+            } catch (err) {
+                alert("Error connecting to database endpoint.");
+            }
+        }
+
+        async function downloadPDF() {
+            const btn = document.querySelector('.btn-download-pdf');
+            const originalText = btn.innerHTML;
+            
+            try {
+                btn.innerHTML = '⏳ Syncing Data...';
+                btn.disabled = true;
+                
+                await loadReports();
+                
+                setTimeout(() => {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                    window.print();
+                }, 400);
+
+            } catch (error) {
+                console.error("Print sync layout failed:", error);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                window.print();
+            }
+        }
+
+        function logout() { localStorage.clear(); window.location.href = 'login.html'; }
+    </script>
+</body>
+</html>

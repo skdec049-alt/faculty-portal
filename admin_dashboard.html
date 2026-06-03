@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel | Centralized Activity Tracking</title>
+    <style>
+        :root { 
+            --primary: #003366; 
+            --sidebar: #1e293b; 
+            --accent: #e28743; 
+            --danger: #dc3545;
+            --success: #28a745;
+        }
+        body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; margin: 0; display: flex; }
+        
+        /* Admin Sidebar Layout styling */
+        .sidebar { width: 260px; background: var(--sidebar); color: white; height: 100vh; position: fixed; padding: 20px; box-sizing: border-box; }
+        .logo-box { background: #334155; padding: 12px; border-radius: 8px; margin-bottom: 30px; text-align: center; color: #fff; font-weight: bold; border-left: 5px solid var(--accent); }
+        .nav-item { padding: 12px; color: #cbd5e1; text-decoration: none; display: block; border-radius: 5px; margin-bottom: 5px; font-weight: 500; }
+        .nav-item.active { background: var(--primary); color: white; }
+        
+        /* Master Container Box */
+        .main-content { margin-left: 260px; flex-grow: 1; padding: 30px; width: calc(100% - 260px); box-sizing: border-box; }
+        .admin-card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px; }
+        
+        .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        h2 { color: var(--primary); margin: 0; display: flex; align-items: center; gap: 10px; }
+        h3 { color: #334155; margin-top: 0; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; font-size: 18px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;}
+        
+        /* Utility Controls (Search Bar) */
+        .controls-row { display: flex; gap: 15px; margin-bottom: 20px; }
+        .search-input { flex-grow: 1; padding: 10px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; outline: none; }
+        .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,51,102,0.1); }
+        
+        /* Admin Interactive Summary Badges */
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px; }
+        .stat-box { padding: 15px; border-radius: 8px; background: #f1f5f9; border-top: 4px solid var(--primary); }
+        .stat-title { font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: bold; }
+        .stat-val { font-size: 24px; font-weight: bold; color: #1e293b; margin-top: 5px; }
+
+        /* Master Database Table Styling */
+        table { width: 100%; border-collapse: collapse; background: white; margin-top: 5px; margin-bottom: 15px; }
+        th { background: #f1f5f9; color: #334155; text-align: left; padding: 12px 16px; border-bottom: 2px solid #e2e8f0; font-size: 14px; font-weight: 600; }
+        td { padding: 12px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #475569; vertical-align: middle; }
+        tr:hover { background-color: #f8fafc; }
+        
+        .badge-faculty { background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 4px; font-weight: bold; font-size: 12px; }
+        .badge-points { background: #dcfce7; color: #15803d; padding: 4px 8px; border-radius: 4px; font-weight: bold; }
+        .badge-total-score { background: #fef3c7; color: #d97706; padding: 6px 12px; border-radius: 20px; font-weight: 800; font-size: 14px; border: 1px solid #fde68a; }
+        
+        .btn-action { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; color: white; }
+        .btn-delete { background: var(--danger); }
+        .btn-delete:hover { background: #b91c1c; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo-box">🛡️ ADMIN MANAGEMENT</div>
+        <a href="#" class="nav-item active">Admin Audit Dashboard</a>
+        <button onclick="logout()" style="width:100%; margin-top:40px; background:#dc3545; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; font-weight:bold;">Logout Admin</button>
+    </div>
+
+    <div class="main-content">
+        
+        <div class="admin-card">
+            <div class="header-flex">
+                <h2>📊 Central System Overview</h2>
+            </div>
+            
+            <div class="stat-grid">
+                <div class="stat-box">
+                    <div class="stat-title">Total Submissions Checked</div>
+                    <div class="stat-val" id="totalSubmissionsCount">0</div>
+                </div>
+                <div class="stat-box" style="border-top-color: #15803d;">
+                    <div class="stat-title">Total API Score Distributed</div>
+                    <div class="stat-val" id="totalPointsSum">0</div>
+                </div>
+                <div class="stat-box" style="border-top-color: var(--accent);">
+                    <div class="stat-title">Active Faculty Members</div>
+                    <div class="stat-val" id="uniqueFacultyCount">0</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <h3>🏅 Faculty-Wise Total API Scores</h3>
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Faculty Member ID</th>
+                            <th>Full Name</th>
+                            <th>Department</th>
+                            <th>College / Institute Location</th>
+                            <th>Aggregated API Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="facultyScoreTableBody">
+                        <tr>
+                            <td colspan="5" style="text-align: center; padding: 15px; color: #94a3b8;">Calculating profile scores...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="admin-card">
+            <h3>📝 Itemized Action Logs</h3>
+            <div class="controls-row">
+                <input type="text" id="adminSearchInput" class="search-input" placeholder="🔍 Filter logs by Faculty Name, Department, Title of Work, or Category..." onkeyup="filterAdminTable()">
+            </div>
+            
+            <div style="overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Submission Date</th>
+                            <th>Faculty Member</th>
+                            <th>Department</th>
+                            <th>Category</th>
+                            <th>Title of Work</th>
+                            <th>Points</th>
+                            <th style="text-align: right;">Administrative Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="adminMasterTableBody">
+                        <tr>
+                            <td colspan="7" style="text-align: center; padding: 25px; color: #94a3b8;">Loading central database index...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', verifyAdminAndLoad);
+
+        function verifyAdminAndLoad() {
+            const adminSession = localStorage.getItem('adminUser');
+            if (!adminSession && !localStorage.getItem('facultyUser')) { 
+                window.location.href = 'login.html'; 
+                return; 
+            }
+            loadMasterRecords();
+        }
+
+        async function loadMasterRecords() {
+            try {
+                // Fetch absolute truth logs across the entire platform schema
+                const res = await fetch(`http://localhost:3000/api/admin/reports/all?t=` + new Date().getTime());
+                const allEntries = await res.json();
+
+                const tbody = document.getElementById('adminMasterTableBody');
+                const facultyTbody = document.getElementById('facultyScoreTableBody');
+                
+                tbody.innerHTML = '';
+                facultyTbody.innerHTML = '';
+
+                if (allEntries.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">No registered entries found inside database logs.</td></tr>';
+                    facultyTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px;">No active profiles found.</td></tr>';
+                    return;
+                }
+
+                let pointsAccumulator = 0;
+                
+                // Track aggregated faculty data structures dynamically
+                const facultyAggregationMap = {};
+
+                allEntries.forEach(item => {
+                    pointsAccumulator += parseInt(item.points || 0);
+                    
+                    // Aggregate faculty total values directly from transactions safely
+                    const fId = item.facultyId || "Unknown";
+                    if (!facultyAggregationMap[fId]) {
+                        facultyAggregationMap[fId] = {
+                            id: fId,
+                            name: item.facultyName || "Unknown Profile",
+                            dept: item.department || "N/A",
+                            college: item.college || "N/A",
+                            calculatedTotal: 0
+                        };
+                    }
+                    facultyAggregationMap[fId].calculatedTotal += parseInt(item.points || 0);
+
+                    // Append row into transaction audit logs
+                    tbody.innerHTML += `
+                        <tr>
+                            <td>${new Date(item.createdAt).toLocaleDateString()}</td>
+                            <td><span class="badge-faculty">${item.facultyName || 'Faculty Member'}</span></td>
+                            <td><strong style="font-size:12px;">${(item.department || 'N/A').toUpperCase()}</strong></td>
+                            <td style="color:#003366; font-weight:600;">${item.category || 'General'}</td>
+                            <td>
+                                <div><strong>${item.title}</strong></div>
+                                <small style="color:#64748b; font-style:italic;">${item.details || ''}</small>
+                            </td>
+                            <td><span class="badge-points">+${item.points}</span></td>
+                            <td style="text-align: right;">
+                                <button class="btn-action btn-delete" onclick="adminDeleteEntry(${item.id})">Remove Entry</button>
+                            </td>
+                        </tr>
+                    `;
+                });
+
+                // Render the aggregated Faculty Summary Total scores
+                Object.values(facultyAggregationMap).forEach(fac => {
+                    facultyTbody.innerHTML += `
+                        <tr>
+                            <td><code>FAC-${fac.id}</code></td>
+                            <td><strong>${fac.name}</strong></td>
+                            <td><span style="font-size: 13px; font-weight: bold; color: #475569;">${fac.dept.toUpperCase()}</span></td>
+                            <td><small style="color:#64748b;">${fac.college}</small></td>
+                            <td><span class="badge-total-score">${fac.calculatedTotal} Pts</span></td>
+                        </tr>
+                    `;
+                });
+
+                // Update system summary stat counters
+                document.getElementById('totalSubmissionsCount').innerText = allEntries.length;
+                document.getElementById('totalPointsSum').innerText = pointsAccumulator;
+                document.getElementById('uniqueFacultyCount').innerText = Object.keys(facultyAggregationMap).length;
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('adminMasterTableBody').innerHTML = '<tr><td colspan="7" style="color:red; text-align:center;">Endpoint verification error. Ensure server is online on port 3000.</td></tr>';
+            }
+        }
+
+        function filterAdminTable() {
+            const query = document.getElementById('adminSearchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#adminMasterTableBody tr');
+
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        async function adminDeleteEntry(id) {
+            if (!confirm("CRITICAL ACTION: Are you sure you want to delete this faculty submission entry? This will recalculate their scoring live.")) return;
+
+            try {
+                const res = await fetch(`http://localhost:3000/api/reports/${id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    alert("Entry removed from global schema logs cleanly.");
+                    loadMasterRecords(); // Refresh global states across both views automatically
+                } else {
+                    alert("Failed to delete the selected tracking node mapping.");
+                }
+            } catch (err) {
+                alert("Server routing network exception.");
+            }
+        }
+
+        function logout() { 
+            localStorage.clear(); 
+            window.location.href = 'login.html'; 
+        }
+    </script>
+</body>
+</html>

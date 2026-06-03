@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TIG JHARKHAND DASHBOARD</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            /* Primary branding theme variables */
+            --primary-red: #8b0000;
+            --sidebar-bg: #4a0000;
+            --text-gray: #666;
+            --accent-red: #dc3545;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; margin: 0; display: flex; min-height: 100vh; }
+        .sidebar { width: 250px; background: var(--sidebar-bg); color: white; height: 100vh; padding: 20px; box-sizing: border-box; position: fixed; left: 0; top: 0; z-index: 100; }
+        .logo-box { background: white; padding: 10px; border-radius: 8px; margin-bottom: 30px; text-align: center; }
+        .nav-item { padding: 12px; cursor: pointer; color: #fff; text-decoration: none; display: block; border-radius: 5px; margin-bottom: 5px; font-size: 14px; }
+        .nav-item:hover, .nav-item.active { background: var(--accent-red); }
+        .main-content { margin-left: 250px; flex-grow: 1; padding: 30px; box-sizing: border-box; width: calc(100% - 250px); }
+        
+        /* CHANGED: Compressed top-bar block padding and margins to match the tight 2nd arrow spacing */
+        .top-bar { 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            margin-bottom: 15px;      /* Reduced spacing below the top bar */
+            padding: 12px 25px;       /* Heavily reduced vertical padding from 30px to 12px */
+            background: white; 
+            border-radius: 10px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.06); 
+            border-left: 6px solid var(--primary-red);
+        }
+        .user-info { 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            text-align: center; 
+            gap: 6px;                 /* Reduced gap between the avatar image and textual data elements */
+        }
+        .user-details { 
+            text-align: center; 
+        }
+        .user-name { 
+            font-weight: 800; 
+            font-size: 24px;          /* Cleaned up sizing to keep the tight compact look balanced */
+            color: #222; 
+            margin: 0 0 2px 0;        /* Tight zero-margin rule */
+            text-transform: uppercase; 
+            letter-spacing: 0.5px;
+        }
+        
+        .user-meta-info { 
+            font-size: 14px;          /* Balanced description font */
+            color: #444; 
+            line-height: 1.3; 
+            font-weight: 500;
+            margin: 0;
+        }
+        .user-meta-info span { color: var(--primary-red); font-weight: 700; }
+        .user-college-display {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-gray);
+            text-transform: uppercase;
+            margin-top: 2px;
+            letter-spacing: 0.5px;
+        }
+
+        /* CHANGED: Made avatar dimensions match the new sleek height profile */
+        .user-avatar { 
+            width: 55px;              /* Scaled down container dimensions */
+            height: 55px; 
+            background: var(--primary-red); 
+            color: white; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-weight: bold; 
+            font-size: 22px; 
+            text-transform: uppercase; 
+            box-shadow: 0 3px 6px rgba(0,0,0,0.12);
+        }
+        
+        .score-banner { background: var(--primary-red); color: white; padding: 20px; border-radius: 10px 10px 0 0; display: flex; justify-content: space-between; align-items: center; }
+        .score-container { background: white; padding: 20px; display: flex; flex-direction: row; flex-wrap: nowrap; gap: 15px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px; overflow-x: auto; }
+        .score-card { flex: 1; min-width: 180px; padding: 20px; border-radius: 8px; border-left: 5px solid; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); display: flex; flex-direction: column; justify-content: center; }
+        .card-blue { border-color: #007bff; }
+        .card-green { border-color: #28a745; }
+        .card-purple { border-color: #6f42c1; }
+        .card-total { border-color: var(--accent-red); background: #fdf5f5; }
+        .role-title { font-size: 13px; font-weight: bold; color: var(--text-gray); margin-bottom: 10px; }
+        .score-display { display: flex; justify-content: space-between; align-items: baseline; }
+        .score-val { font-size: 26px; font-weight: bold; color: #333; }
+        .min-label { font-size: 11px; color: #999; text-transform: uppercase; }
+        .chart-card { background: white; padding: 25px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .btn-logout { width: 100%; padding: 10px; border-radius: 5px; border: none; background: #dc3545; color: white; cursor: pointer; font-weight: bold; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo-box">
+            <strong style="color: #8b0000; font-size: 16px;">TECHNO INDIA GROUP JHARKHAND</strong>
+        </div>
+        <a href="dashboard.html" class="nav-item active">Home</a>
+        <a href="forms.html" class="nav-item">Forms</a>
+        <a href="reports.html" class="nav-item">Reports</a>
+        <a href="#" class="nav-item">Grievance</a>
+        <a href="#" class="nav-item">Previous Year Data</a>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="main-content">
+        <div class="top-bar">
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatarContainer" onclick="document.getElementById('photoInput').click()" style="cursor: pointer; overflow: hidden; border: 2.5px solid #8b0000;">
+                    <span id="userInitial">?</span>
+                    <img id="profileImage" src="" style="display:none; width:100%; height:100%; object-fit: cover;">
+                </div>
+                <input type="file" id="photoInput" style="display: none;" accept="image/*" onchange="uploadPhoto(this)">
+                
+                <div class="user-details">
+                    <div class="user-name" id="loggedInUserName">Loading Name...</div>
+                    <div class="user-meta-info">
+                        <span id="loggedInUserDesignation">--</span> &bull; Department of <span id="loggedInUserDept">--</span>
+                    </div>
+                    <div class="user-college-display" id="loggedInUserCollege">
+                        Loading Campus Location...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="score-banner">
+            <div>
+                <h3 style="margin: 0;">📋 API Score Requirements</h3>
+                <p style="margin: 5px 0 0 0; font-size: 12px; opacity: 0.8;">Live Performance Tracking</p>
+            </div>
+            <div style="background: rgba(255,255,255,0.2); padding: 8px 15px; border-radius: 5px; font-size: 12px; font-weight: bold;">TECHNO INDIA GROUP JHARKHAND</div>
+        </div>
+
+        <div class="score-container">
+            <div class="score-card card-total">
+                <div class="role-title">Your Total Score</div>
+                <div class="score-display">
+                    <span class="score-val" id="myTotalScore">0</span>
+                    <span class="min-label">Current</span>
+                </div>
+            </div>
+            <div class="score-card card-blue">
+                <div class="role-title">Technical Assistant</div>
+                <div class="score-display">
+                    <span class="score-val">170</span>
+                    <span class="min-label">Min Score</span>
+                </div>
+            </div>
+            <div class="score-card card-green">
+                <div class="role-title">Assistant Professor</div>
+                <div class="score-display">
+                    <span class="score-val">300</span>
+                    <span class="min-label">Min Score</span>
+                </div>
+            </div>
+            <div class="score-card card-purple">
+                <div class="role-title">Associate Professor</div>
+                <div class="score-display">
+                    <span class="score-val">400</span>
+                    <span class="min-label">Min Score</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-card">
+            <h4 style="margin-top: 0;">Performance vs Benchmarks</h4>
+            <div style="height: 300px;">
+                <canvas id="scoreChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+<script>
+    let myChart;
+
+    document.addEventListener('DOMContentLoaded', async () => {
+        const userData = localStorage.getItem('facultyUser');
+        if (!userData) { window.location.href = 'login.html'; return; }
+        const user = JSON.parse(userData);
+
+        document.getElementById('loggedInUserName').innerText = user.fullname || "Faculty Member";
+        document.getElementById('loggedInUserDept').innerText = user.department ? user.department.toUpperCase() : "N/A";
+        document.getElementById('loggedInUserDesignation').innerText = user.designation || "Faculty";
+        document.getElementById('loggedInUserCollege').innerText = user.college || "Techno India Group";
+        
+        if (user.fullname) {
+            document.getElementById('userInitial').innerText = user.fullname.trim().charAt(0).toUpperCase();
+        }
+
+        const savedPhoto = localStorage.getItem(`profile_photo_${user.id}`);
+        if (savedPhoto) {
+            document.getElementById('profileImage').src = savedPhoto;
+            document.getElementById('profileImage').style.display = 'block';
+            document.getElementById('userInitial').style.display = 'none';
+        }
+        
+        const baselineScore = parseInt(user.score || 0);
+        document.getElementById('myTotalScore').innerText = baselineScore;
+        updateDashboardUI(baselineScore);
+
+        try {
+            const res = await fetch('http://localhost:3000/api/faculty?t=' + new Date().getTime());
+            const allFaculty = await res.json();
+            
+            const freshData = allFaculty.find(f => f.id === user.id);
+            
+            if (freshData) {
+                const liveScore = parseInt(freshData.score || 0);
+                
+                document.getElementById('myTotalScore').innerText = liveScore;
+                updateDashboardUI(liveScore);
+
+                user.score = liveScore;
+                localStorage.setItem('facultyUser', JSON.stringify(user));
+            }
+        } catch (err) {
+            console.error("Connection to server failed. Using offline fallback data.");
+            updateDashboardUI(parseInt(user.score || 0));
+        }
+    });
+
+    function updateDashboardUI(score) {
+        const ctx = document.getElementById('scoreChart').getContext('2d');
+        
+        if (myChart) { myChart.destroy(); }
+
+        const chartUpperBound = score > 450 ? score + 50 : 500;
+
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Your Score', 'Min Tech', 'Min Assistant', 'Min Associate'],
+                datasets: [{
+                    label: 'Points Earned',
+                    data: [score, 170, 300, 400],
+                    backgroundColor: ['#dc3545', '#007bff', '#28a745', '#6f42c1'],
+                    borderRadius: 5
+                }]
+            },
+            options: { 
+                maintainAspectRatio: false, 
+                responsive: true,
+                scales: { y: { beginAtZero: true, max: chartUpperBound } } 
+            }
+        });
+    }
+
+    function uploadPhoto(input) {
+        if (input.files && input.files[0]) {
+            const userData = localStorage.getItem('facultyUser');
+            const user = userData ? JSON.parse(userData) : null;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const base64Image = e.target.result;
+                document.getElementById('profileImage').src = base64Image;
+                document.getElementById('profileImage').style.display = 'block';
+                document.getElementById('userInitial').style.display = 'none';
+                
+                if (user && user.id) {
+                    localStorage.setItem(`profile_photo_${user.id}`, base64Image);
+                }
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function logout() {
+        const tempPhotos = {};
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key.startsWith('profile_photo_')) {
+                tempPhotos[key] = localStorage.getItem(key);
+            }
+        }
+        
+        localStorage.clear();
+        
+        for (const key in tempPhotos) {
+            localStorage.setItem(key, tempPhotos[key]);
+        }
+
+        window.location.href = 'login.html';
+    }
+</script>
+</body>
+</html>

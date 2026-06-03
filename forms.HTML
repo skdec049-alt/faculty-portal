@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Activity | Faculty Portal</title>
+    <style>
+        :root {
+            --primary-red: #8b0000;
+            --sidebar-bg: #4a0000;
+            --text-gray: #666;
+            --accent-red: #dc3545;
+            --input-focus: #ffccd0;
+        }
+
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f0f2f5; margin: 0; display: flex; min-height: 100vh; }
+        
+        .sidebar { width: 250px; background: var(--sidebar-bg); color: white; height: 100vh; padding: 20px; box-sizing: border-box; position: fixed; left: 0; top: 0; z-index: 100; }
+        .logo-box { background: white; padding: 10px; border-radius: 8px; margin-bottom: 30px; text-align: center; }
+        .nav-item { padding: 12px; cursor: pointer; color: #fff; text-decoration: none; display: block; border-radius: 5px; margin-bottom: 5px; font-size: 14px; }
+        .nav-item:hover, .nav-item.active { background: var(--accent-red); }
+        .btn-logout { width: 100%; padding: 10px; border-radius: 5px; border: none; background: #dc3545; color: white; cursor: pointer; font-weight: bold; margin-top: 20px; }
+        .btn-logout:hover { background: #bd2130; }
+
+        .main-content { margin-left: 250px; flex-grow: 1; padding: 40px 30px; box-sizing: border-box; width: calc(100% - 250px); display: flex; justify-content: center; align-items: flex-start; }
+        .form-card { background: white; width: 100%; max-width: 750px; padding: 35px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        
+        .form-title { color: var(--primary-red); margin: 0 0 8px 0; font-size: 24px; font-weight: bold; }
+        .form-subtitle { color: var(--text-gray); margin: 0 0 25px 0; font-size: 13px; line-height: 1.5; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+
+        .form-group { margin-bottom: 20px; }
+        .form-row { display: flex; gap: 15px; margin-bottom: 20px; }
+        .form-row .form-group { flex: 1; margin-bottom: 0; }
+        
+        label { display: block; font-weight: 600; font-size: 14px; color: #333; margin-bottom: 8px; }
+        
+        input[type="text"], input[type="url"], select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            box-sizing: border-box;
+            font-size: 14px;
+            font-family: inherit;
+            background-color: #fafafa;
+            transition: all 0.2s ease;
+        }
+        input[type="text"]:focus, input[type="url"]:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent-red);
+            background-color: #fff;
+            box-shadow: 0 0 0 3px var(--input-focus);
+        }
+
+        optgroup { font-weight: bold; color: var(--primary-red); background: #fff; }
+        optgroup option { font-weight: normal; color: #333; padding: 4px; }
+        textarea { resize: vertical; min-height: 110px; }
+
+        /* Dynamic Category Section Styling */
+        .dynamic-section {
+            background: #fdf8f8;
+            border: 1px dashed #e0b0b0;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .section-subtitle {
+            color: var(--primary-red);
+            font-size: 14px;
+            font-weight: bold;
+            margin: 0 0 15px 0;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid #f0d0d0;
+            padding-bottom: 5px;
+        }
+
+        /* Score Badge Component */
+        .score-badge {
+            background: #fff3f3;
+            border: 1px solid #ffcccc;
+            color: var(--primary-red);
+            padding: 12px;
+            border-radius: 5px;
+            font-weight: bold;
+            font-size: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn-submit {
+            width: 100%;
+            background: var(--primary-red);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 5px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            transition: background 0.2s ease;
+            margin-top: 10px;
+        }
+        .btn-submit:hover { background: #700000; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <div class="logo-box">
+            <strong style="color: #8b0000; font-size: 16px;">TECHNO INDIA GROUP JHARKHAND</strong>
+        </div>
+        <a href="dashboard.html" class="nav-item">Home</a>
+        <a href="forms.html" class="nav-item active">Forms</a>
+        <a href="reports.html" class="nav-item">Reports</a>
+        <a href="#" class="nav-item">Grievance</a>
+        <a href="#" class="nav-item">Previous Year Data</a>
+        <button class="btn-logout" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="main-content">
+        <div class="form-card">
+            <h2 class="form-title">Submit API Activity</h2>
+            <p class="form-subtitle">Submit your research, publications, or teaching hours to update your score matrix.</p>
+            
+            <form id="activityForm" onsubmit="handleFormSubmit(event)">
+                <div class="form-group">
+                    <label for="activityCategory">Activity Category</label>
+                    <select id="activityCategory" onchange="toggleCategorySections(this.value)" required>
+                        <option value="" disabled selected>Select an institutional metric...</option>
+                        
+                        <optgroup label="CATEGORY 1: Teaching and Duties">
+                            <option value="cat1_direct">Direct Teaching (Lectures, Practicals, Contact Hours) (+10 pts)</option>
+                            <option value="cat1_exam">Examination Duties (Question Paper Setting, Invigilation, Script Evaluation) (+5 pts)</option>
+                        </optgroup>
+
+                        <optgroup label="CATEGORY 2: Co-Curricular & Professional Development">
+                            <option value="cat2_discipline">Student Co-Curricular (Remedial Classes, Career Counselling, Seminars) (+10 pts)</option>
+                            <option value="cat2_other">Other Activities (Cultural, Sports, NSS, NCC) (+10 pts)</option>
+                            <option value="cat2_extension">Extension & Dissemination (Public/Popular Lectures, Talks, Seminars) (+5 pts)</option>
+                            <option value="cat2_admin">Administrative Responsibility (Dean, Principal, Convener, Teacher-in-charge) (+20 pts)</option>
+                            <option value="cat2_committee">Participation in Board of Studies, Academic & Administrative Committees (+15 pts)</option>
+                            <option value="cat2_professional">Professional Development (FDP, Seminars, Conferences, Short-term Training) (+10 pts)</option>
+                        </optgroup>
+
+                        <optgroup label="CATEGORY 3: Research and Publications">
+                            <option value="cat3_journal">Journal Publication (Dynamic Score Formula Matrix)</option>
+                        </optgroup>
+                    </select>
+                </div>
+
+                <div id="category3Section" class="dynamic-section" style="display: none;">
+                    <div class="section-subtitle">Journal Publication Fields</div>
+                    
+                    <div class="form-group">
+                        <label for="journalName">Journal Name</label>
+                        <input type="text" id="journalName" placeholder="Enter complete journal name">
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="categoryOfJournal">Category of Journal</label>
+                            <input type="text" id="categoryOfJournal" placeholder="e.g., International / National">
+                        </div>
+                        <div class="form-group">
+                            <label for="typeOfJournal">Type of Journal</label>
+                            <select id="typeOfJournal">
+                                <option value="" disabled selected>Select option...</option>
+                                <option value="Scopus">Scopus Indexed</option>
+                                <option value="UGC Care">UGC CARE Listed</option>
+                                <option value="Refereed">Refereed Journal</option>
+                                <option value="Other">Other Open Access</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="publicationDate">Month and Year of Publication</label>
+                            <input type="text" id="publicationDate" placeholder="e.g., Jan, 2024">
+                        </div>
+                        <div class="form-group">
+                            <label for="issnNumber">ISSN</label>
+                            <input type="text" id="issnNumber" placeholder="e.g., 1234-567X">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="scopusQuartile">Quartile of Scopus Journal</label>
+                            <select id="scopusQuartile">
+                                <option value="None">None / Non-Scopus</option>
+                                <option value="Q1">Q1 Quartile</option>
+                                <option value="Q2">Q2 Quartile</option>
+                                <option value="Q3">Q3 Quartile</option>
+                                <option value="Q4">Q4 Quartile</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="certificateLink">Drive Link to the Certificate</label>
+                            <input type="url" id="certificateLink" placeholder="https://drive.google.com/...">
+                        </div>
+                    </div>
+
+                    <div class="section-subtitle" style="margin-top:25px; border-top:1px dashed #f0d0d0; padding-top:15px;">Dynamic Matrix Score Calculator</div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="authorCategory">Number of Authors</label>
+                            <select id="authorCategory" onchange="calculateCategory3Points()">
+                                <option value="single">Single Author</option>
+                                <option value="two">Two Authors</option>
+                                <option value="first_principal">First / Principal / Corresponding Author (More than 2)</option>
+                                <option value="joint">Joint Author (More than 2 Authors)</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="impactFactorTier">Impact Factor Range</label>
+                            <select id="impactFactorTier" onchange="calculateCategory3Points()">
+                                <option value="none">No Impact Factor</option>
+                                <option value="less_1">Less than 1</option>
+                                <option value="1_3">Impact Factor 1-3</option>
+                                <option value="3_5">Impact Factor 3-5</option>
+                                <option value="6_10">Impact Factor 6-10</option>
+                                <option value="more_10">More than 10</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="score-badge">
+                    <span>Calculated API Point Yield:</span>
+                    <span id="pointDisplayValue">0 Points</span>
+                </div>
+
+                <div class="form-group">
+                    <label for="titleOfWork">Paper / Activity Title</label>
+                    <input type="text" id="titleOfWork" placeholder="e.g., Deep Learning Analysis of Fundus Images" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="additionalDetails">Additional Details</label>
+                    <textarea id="additionalDetails" placeholder="Provide extra descriptive details, volume numbers, pages, co-author names, or verification notes..."></textarea>
+                </div>
+
+                <button type="submit" class="btn-submit">Submit for Review</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Official Institutional Category 3 Score Matrix Object Dataset Lookup
+        const scoreMatrix = {
+            single:          { none: 13,  less_1: 18,   "1_3": 23,   "3_5": 28,   "6_10": 33,   more_10: 38 },
+            two:             { none: 9.1, less_1: 12.6, "1_3": 16.1, "3_5": 19.6, "6_10": 23.1, more_10: 26.6 },
+            first_principal: { none: 9.1, less_1: 12.6, "1_3": 16.1, "3_5": 19.6, "6_10": 23.1, more_10: 26.6 },
+            joint:           { none: 3.9, less_1: 5.4,  "1_3": 6.9,  "3_5": 8.4,  "6_10": 9.9,  more_10: 11.4 }
+        };
+
+        // Static tracking point fallback definitions for Categories 1 & 2
+        const staticPointsMap = {
+            cat1_direct: 10, cat1_exam: 5,
+            cat2_discipline: 10, cat2_other: 10, cat2_extension: 5, cat2_admin: 20, cat2_committee: 15, cat2_professional: 10
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const userData = localStorage.getItem('facultyUser');
+            if (!userData) { window.location.href = 'login.html'; }
+        });
+
+        function toggleCategorySections(selectedValue) {
+            const cat3Section = document.getElementById('category3Section');
+            
+            if (selectedValue === 'cat3_journal') {
+                cat3Section.style.display = 'block';
+                // Enforce input fields requirement context rules when visible
+                document.getElementById('journalName').required = true;
+                document.getElementById('categoryOfJournal').required = true;
+                calculateCategory3Points();
+            } else {
+                cat3Section.style.display = 'none';
+                document.getElementById('journalName').required = false;
+                document.getElementById('categoryOfJournal').required = false;
+                
+                const pts = staticPointsMap[selectedValue] || 0;
+                document.getElementById('pointDisplayValue').innerText = pts + " Points";
+            }
+        }
+
+        function calculateCategory3Points() {
+            const author = document.getElementById('authorCategory').value;
+            const tier = document.getElementById('impactFactorTier').value;
+            
+            const points = scoreMatrix[author][tier] || 0;
+            document.getElementById('pointDisplayValue').innerText = points + " Points";
+            return points;
+        }
+
+        async function handleFormSubmit(event) {
+            event.preventDefault();
+            
+            const userData = localStorage.getItem('facultyUser');
+            if (!userData) { alert("Session expired. Please log in again."); return; }
+            const user = JSON.parse(userData);
+
+            const categoryKey = document.getElementById('activityCategory').value;
+            const title = document.getElementById('titleOfWork').value;
+            let details = document.getElementById('additionalDetails').value;
+            
+            let finalPoints = 0;
+            let finalCategoryText = "";
+
+            if (categoryKey === 'cat3_journal') {
+                finalPoints = calculateCategory3Points();
+                finalCategoryText = "Category 3: Journal Publication";
+                
+                // Package structural category metrics directly into detail summary blocks
+                const journalDetails = `[Journal: ${document.getElementById('journalName').value} | Cat: ${document.getElementById('categoryOfJournal').value} | Index: ${document.getElementById('typeOfJournal').value} | Date: ${document.getElementById('publicationDate').value} | ISSN: ${document.getElementById('issnNumber').value} | Quartile: ${document.getElementById('scopusQuartile').value} | Link: ${document.getElementById('certificateLink').value}]`;
+                details = journalDetails + (details ? " \n\nAdditional Notes: " + details : "");
+            } else {
+                finalPoints = staticPointsMap[categoryKey] || 0;
+                const selectEl = document.getElementById('activityCategory');
+                finalCategoryText = selectEl.options[selectEl.selectedIndex].text.split(' (+')[0];
+            }
+
+            const payload = {
+                facultyId: user.id,
+                category: finalCategoryText,
+                title: title,
+                details: details,
+                points: finalPoints
+            };
+
+            try {
+                const response = await fetch('http://localhost:3000/api/submit-activity', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                const data = await response.json();
+
+                if (response.ok) {
+                    alert("Activity registered successfully! Form matrix tracking sync complete.");
+                    document.getElementById('activityForm').reset();
+                    document.getElementById('category3Section').style.display = 'none';
+                    document.getElementById('pointDisplayValue').innerText = "0 Points";
+                    window.location.href = 'reports.html';
+                } else {
+                    alert("Error submitting request: " + (data.error || "Unknown server response error."));
+                }
+            } catch (err) {
+                console.error("Submission failed: ", err);
+                alert("Could not connect to the backend server API. Please ensure your node server is active.");
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Portal | Login</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #28a745; /* Green color for Login */
+            border: none;
+            color: white;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        button:hover {
+            background-color: #218838;
+        }
+        .footer-text {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 14px;
+            color: #888;
+        }
+        a {
+            color: #007bff;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <h2>Faculty Login</h2>
+    <form id="loginForm">
+        <div class="form-group">
+            <label for="email">Institutional Email</label>
+            <input type="email" id="email" placeholder="john.doe@university.edu" required>
+        </div>
+
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" placeholder="••••••••" required>
+        </div>
+
+        <button type="submit">Login</button>
+    </form>
+    <div class="footer-text">
+        Don't have an account? <a href="Index.html">Sign up here</a>
+    </div>
+</div>
+
+<script>
+    document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+
+        const emailInput = document.getElementById('email').value.trim();
+        const passwordInput = document.getElementById('password').value;
+
+        // ==========================================
+        // ADDED: ADMIN CREDENTIAL INTERCEPTOR
+        // ==========================================
+        if (emailInput === "admin@university.edu" && passwordInput === "admin123") {
+            // Save admin metadata signature to state storage
+            localStorage.setItem('adminUser', JSON.stringify({ 
+                role: 'administrator', 
+                name: 'System Admin' 
+            }));
+            
+            alert("Admin Access Granted. Opening Auditing Logs...");
+            window.location.href = 'admin_dashboard.html';
+            return; // Stops executing the standard faculty fetch below
+        }
+
+        // Proceed normally for standard faculty members
+        const credentials = {
+            email: emailInput,
+            password: passwordInput
+        };
+
+        try {
+            const response = await fetch('http://localhost:3000/api/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(credentials)
+            });
+
+            const result = await response.json();
+
+            if (response.ok) {
+                // IMPORTANT: Save the user data to localStorage
+                localStorage.setItem('facultyUser', JSON.stringify(result.user));
+                
+                alert("Login Successful!");
+                // Redirect to the dashboard
+                window.location.href = 'dashboard.html';
+            } else {
+                alert("Error: " + result.message);
+            }
+        } catch (error) {
+            console.error("Connection Error:", error);
+            alert("Could not connect to the server. Is Node.js running?");
+        }
+    });
+</script>
+
+</body>
+</html>
