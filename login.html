@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Faculty Portal | Login</title>
     <style>
+        :root {
+            /* Swapped out the old palette for your uniform Crimson Red branding theme */
+            --primary-red: #8b0000;
+            --btn-hover: #4a0000;
+            --text-gray: #666;
+            --border-color: #ddd;
+            --input-focus: #fdf5f5;
+            --accent-red: #dc3545;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f7f6;
@@ -21,6 +31,7 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             width: 100%;
             max-width: 400px;
+            border-top: 5px solid var(--primary-red);
         }
         h2 {
             text-align: center;
@@ -33,28 +44,39 @@
         label {
             display: block;
             margin-bottom: 5px;
-            color: #666;
+            color: var(--text-gray);
+            font-weight: 600;
+            font-size: 14px;
         }
         input {
             width: 100%;
             padding: 10px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--border-color);
             border-radius: 4px;
             box-sizing: border-box;
+            background-color: #fafafa;
+            transition: all 0.2s ease;
+        }
+        input:focus {
+            outline: none;
+            border-color: var(--accent-red);
+            background-color: #fff;
+            box-shadow: 0 0 0 3px var(--input-focus);
         }
         button {
             width: 100%;
             padding: 12px;
-            background-color: #28a745; /* Green color for Login */
+            background-color: var(--primary-red);
             border: none;
             color: white;
             font-size: 16px;
+            font-weight: bold;
             border-radius: 4px;
             cursor: pointer;
             transition: background 0.3s;
         }
         button:hover {
-            background-color: #218838;
+            background-color: var(--btn-hover);
         }
         .footer-text {
             text-align: center;
@@ -63,8 +85,12 @@
             color: #888;
         }
         a {
-            color: #007bff;
+            color: var(--accent-red);
             text-decoration: none;
+            font-weight: 600;
+        }
+        a:hover {
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -98,10 +124,9 @@
         const passwordInput = document.getElementById('password').value;
 
         // ==========================================
-        // ADDED: ADMIN CREDENTIAL INTERCEPTOR
+        // ADMIN CREDENTIAL INTERCEPTOR
         // ==========================================
         if (emailInput === "admin@university.edu" && passwordInput === "admin123") {
-            // Save admin metadata signature to state storage
             localStorage.setItem('adminUser', JSON.stringify({ 
                 role: 'administrator', 
                 name: 'System Admin' 
@@ -109,17 +134,17 @@
             
             alert("Admin Access Granted. Opening Auditing Logs...");
             window.location.href = 'admin_dashboard.html';
-            return; // Stops executing the standard faculty fetch below
+            return; 
         }
 
-        // Proceed normally for standard faculty members
         const credentials = {
             email: emailInput,
             password: passwordInput
         };
 
         try {
-            const response = await fetch('http://localhost:3000/api/login', {
+            // UPDATED: Replaced hardcoded localhost reference with a relative path endpoint
+            const response = await fetch('/api/login', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(credentials)
@@ -128,18 +153,17 @@
             const result = await response.json();
 
             if (response.ok) {
-                // IMPORTANT: Save the user data to localStorage
                 localStorage.setItem('facultyUser', JSON.stringify(result.user));
                 
                 alert("Login Successful!");
-                // Redirect to the dashboard
                 window.location.href = 'dashboard.html';
             } else {
                 alert("Error: " + result.message);
             }
         } catch (error) {
             console.error("Connection Error:", error);
-            alert("Could not connect to the server. Is Node.js running?");
+            // UPDATED: Adjusted fallback interface string to match network conditions globally
+            alert("Could not connect to the server. Please verify your internet connection or service availability.");
         }
     });
 </script>

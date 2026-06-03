@@ -205,7 +205,8 @@
             };
 
             try {
-                const response = await fetch('http://localhost:3000/api/signup', {
+                // UPDATED: Replaced hardcoded localhost URL with a relative path for deployment compatibility
+                const response = await fetch('/api/signup', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -221,7 +222,8 @@
                 }
             } catch (error) {
                 console.error("Sign up interface exception:", error);
-                alert("Could not interface with backend services. Verify your Node server is executing on port 3000.");
+                // UPDATED: Streamlined exception message to reflect dynamic hosting status
+                alert("Could not interface with backend services. Please verify your network connection or backend availability.");
             }
         }
     </script>

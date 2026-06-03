@@ -168,7 +168,8 @@
             const user = JSON.parse(userData);
 
             try {
-                const res = await fetch(`http://localhost:3000/api/reports/${user.id}?t=` + new Date().getTime());
+                // UPDATED: Replaced hardcoded localhost URL configuration with relative endpoint path
+                const res = await fetch(`/api/reports/${user.id}?t=` + new Date().getTime());
                 const reports = await res.json();
 
                 const container = document.getElementById('categoryContainer');
@@ -193,13 +194,11 @@
                     totalCalculatedScore += parseInt(item.points || 0);
                 });
 
-                // Updates the header counter item with live calculated sum values
                 document.getElementById('headerTotalScore').innerText = totalCalculatedScore;
 
                 for (const [categoryName, group] of Object.entries(groupedData)) {
                     let rowsHtml = '';
                     group.activities.forEach(act => {
-                        // Sanitizing content text safely to avoid breaking JavaScript template parameters
                         const cleanTitle = (act.title || "Untitled").replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         const cleanDetails = (act.details || "").replace(/'/g, "\\'").replace(/"/g, '&quot;');
 
@@ -256,7 +255,8 @@
             if (!confirm("Are you sure you want to permanently delete this activity entry? Your total score will update automatically.")) return;
 
             try {
-                const res = await fetch(`http://localhost:3000/api/reports/${id}`, { method: 'DELETE' });
+                // UPDATED: Replaced hardcoded localhost reference with path parameters
+                const res = await fetch(`/api/reports/${id}`, { method: 'DELETE' });
                 const result = await res.json();
 
                 if (res.ok) {
@@ -287,7 +287,8 @@
             if (newDetails === null) return;
 
             try {
-                const res = await fetch(`http://localhost:3000/api/reports/${id}`, {
+                // UPDATED: Swapped explicit domain host names with direct endpoint paths
+                const res = await fetch(`/api/reports/${id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ title: newTitle.trim(), details: newDetails.trim() })
