@@ -1,11 +1,8 @@
-Here is your updated, fully integrated single-file code.
+To achieve an **Institute-wide isolated view** where selecting a college completely updates the entire page context—including the **Top Statistics Dashboard**, the **Faculty Leaderboard**, and the **Itemized Logs**—we need to overhaul the filtering architecture.
 
-### Key Enhancements Made
+Instead of just hiding rows in the log table, the code below saves the raw API payload data globally and passes it through an **Institute Filter Layer** first. When you select **Dumka** or **Ramgarh**, the dashboard recalculates everything dynamically for that college only.
 
-* 🏛️ **Institute Filter Dropdown:** Added a new dynamic dropdown filter next to the faculty filter to narrow logs down by college/institute.
-* 📋 **New Column in Action Logs:** Inserted a **College / Institute** column into the *Itemized Action Logs* table so you can track where entries originate at a glance.
-* 🔄 **Synchronized Filter Logic:** Updated the `filterAdminTable()` function to handle both search queries, faculty selections, and institute selections concurrently.
-* 🗃️ **Dynamic Option Aggregation:** The script now maps out unique institutes directly from your live API payload data to keep your dropdown filters current.
+Here is the updated, complete single-file code:
 
 ```html
 <!DOCTYPE html>
@@ -37,6 +34,11 @@ Here is your updated, fully integrated single-file code.
         .header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
         h2 { color: var(--primary); margin: 0; display: flex; align-items: center; gap: 10px; }
         h3 { color: #334155; margin-top: 0; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; font-size: 18px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;}
+        
+        /* Global Institute Switcher Styles */
+        .institute-selector-card { background: linear-gradient(135deg, var(--primary) 0%, #002244 100%); color: white; }
+        .institute-selector-card h2 { color: white; }
+        .global-select { padding: 12px 20px; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; font-size: 16px; font-weight: bold; outline: none; background: white; color: #1e293b; min-width: 280px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
         /* Utility Controls (Search & Dropdowns) */
         .controls-row { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
@@ -76,22 +78,33 @@ Here is your updated, fully integrated single-file code.
 
     <div class="main-content">
         
+        <div class="admin-card institute-selector-card">
+            <div class="header-flex" style="margin-bottom: 0;">
+                <h2>🏛️ Select Administrative Zone Scope:</h2>
+                <select id="globalInstituteFilter" class="global-select" onchange="renderScopedDashboard()">
+                    <option value="">All Institutes / Colleges (Global View)</option>
+                    <option value="dumka">Dumka Campus Records</option>
+                    <option value="ramgarh">Ramgarh Campus Records</option>
+                </select>
+            </div>
+        </div>
+
         <div class="admin-card">
             <div class="header-flex">
-                <h2>📊 Central System Overview</h2>
+                <h2 id="overviewTitle">📊 Central System Overview</h2>
             </div>
             
             <div class="stat-grid">
                 <div class="stat-box">
-                    <div class="stat-title">Total Submissions Checked</div>
+                    <div class="stat-title">Submissions Count</div>
                     <div class="stat-val" id="totalSubmissionsCount">0</div>
                 </div>
                 <div class="stat-box" style="border-top-color: #15803d;">
-                    <div class="stat-title">Total API Score Distributed</div>
+                    <div class="stat-title">API Scores Distributed</div>
                     <div class="stat-val" id="totalPointsSum">0</div>
                 </div>
                 <div class="stat-box" style="border-top-color: var(--accent);">
-                    <div class="stat-title">Active Faculty Members</div>
+                    <div class="stat-title">Tracked Faculty Profiles</div>
                     <div class="stat-val" id="uniqueFacultyCount">0</div>
                 </div>
             </div>
@@ -122,12 +135,7 @@ Here is your updated, fully integrated single-file code.
         <div class="admin-card">
             <h3>📝 Itemized Action Logs</h3>
             <div class="controls-row">
-                <input type="text" id="adminSearchInput" class="search-input" placeholder="🔍 Filter logs by Title of Work..." onkeyup="filterAdminTable()">
-                
-                <select id="instituteDropdownFilter" class="filter-select" onchange="filterAdminTable()">
-                    <option value="">All Institutes / Colleges</option>
-                </select>
-
+                <input type="text" id="adminSearchInput" class="search-input" placeholder="🔍 Filter local scope logs by Title of Work..." onkeyup="filterAdminTable()">
                 <select id="facultyDropdownFilter" class="filter-select" onchange="filterAdminTable()">
                     <option value="">All Faculty Members</option>
                 </select>
@@ -159,6 +167,9 @@ Here is your updated, fully integrated single-file code.
     </div>
 
     <script>
+        // Store system-wide registry logs globally to query without extra API calls
+        let masterDatabaseState = [];
+
         document.addEventListener('DOMContentLoaded', verifyAdminAndLoad);
 
         function verifyAdminAndLoad() {
@@ -173,108 +184,11 @@ Here is your updated, fully integrated single-file code.
         async function loadMasterRecords() {
             try {
                 const res = await fetch(`/api/admin/reports/all?t=` + new Date().getTime());
-                let allEntries = await res.json();
-
-                const tbody = document.getElementById('adminMasterTableBody');
-                const facultyTbody = document.getElementById('facultyScoreTableBody');
+                masterDatabaseState = await res.json();
                 
-                tbody.innerHTML = '';
-                facultyTbody.innerHTML = '';
-
-                if (allEntries.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">No registered entries found inside database logs.</td></tr>';
-                    facultyTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px;">No active profiles found.</td></tr>';
-                    return;
-                }
-
-                // Sort items naturally by Category Serial string
-                allEntries.sort((a, b) => {
-                    const catA = (a.category || '').toLowerCase();
-                    const catB = (b.category || '').toLowerCase();
-                    return catA.localeCompare(catB, undefined, { numeric: true, sensitivity: 'base' });
-                });
-
-                let pointsAccumulator = 0;
-                const facultyAggregationMap = {};
-                const uniqueInstitutes = new Set();
-
-                allEntries.forEach(item => {
-                    pointsAccumulator += parseInt(item.points || 0);
-                    
-                    const fId = item.facultyId || "Unknown";
-                    const collegeName = item.college || "N/A";
-                    
-                    if (item.college) {
-                        uniqueInstitutes.add(item.college);
-                    }
-
-                    if (!facultyAggregationMap[fId]) {
-                        facultyAggregationMap[fId] = {
-                            id: fId,
-                            name: item.facultyName || "Unknown Profile",
-                            dept: item.department || "N/A",
-                            college: collegeName,
-                            calculatedTotal: 0
-                        };
-                    }
-                    facultyAggregationMap[fId].calculatedTotal += parseInt(item.points || 0);
-
-                    tbody.innerHTML += `
-                        <tr data-faculty-name="${(item.facultyName || '').toLowerCase()}" data-institute-name="${collegeName.toLowerCase()}">
-                            <td>${new Date(item.createdAt).toLocaleDateString()}</td>
-                            <td><span class="badge-faculty">${item.facultyName || 'Faculty Member'}</span></td>
-                            <td><small style="color:#64748b; font-weight:500;">${collegeName}</small></td>
-                            <td><strong style="font-size:12px;">${(item.department || 'N/A').toUpperCase()}</strong></td>
-                            <td style="color:#003366; font-weight:600;">${item.category || 'General'}</td>
-                            <td>
-                                <div><strong>${item.title}</strong></div>
-                                <small style="color:#64748b; font-style:italic;">${item.details || ''}</small>
-                            </td>
-                            <td><span class="badge-points">+${item.points}</span></td>
-                            <td style="text-align: right;">
-                                <button class="btn-action btn-delete" onclick="adminDeleteEntry(${item.id})">Remove Entry</button>
-                            </td>
-                        </tr>
-                    `;
-                });
-
-                // Populate Faculty Summary Table
-                Object.values(facultyAggregationMap).forEach(fac => {
-                    facultyTbody.innerHTML += `
-                        <tr>
-                            <td><code>FAC-${fac.id}</code></td>
-                            <td><strong>${fac.name}</strong></td>
-                            <td><span style="font-size: 13px; font-weight: bold; color: #475569;">${fac.dept.toUpperCase()}</span></td>
-                            <td><small style="color:#64748b;">${fac.college}</small></td>
-                            <td><span class="badge-total-score">${fac.calculatedTotal} Pts</span></td>
-                        </tr>
-                    `;
-                });
-
-                // Dynamically Build Institute Dropdown Filter Options
-                const instDropdown = document.getElementById('instituteDropdownFilter');
-                const currentInstSelection = instDropdown.value;
-                instDropdown.innerHTML = '<option value="">All Institutes / Colleges</option>';
-                Array.from(uniqueInstitutes).sort().forEach(inst => {
-                    instDropdown.innerHTML += `<option value="${inst.toLowerCase()}">${inst}</option>`;
-                });
-                if (currentInstSelection) instDropdown.value = currentInstSelection;
-
-                // Dynamically Build Faculty Dropdown Filter Options
-                const facDropdown = document.getElementById('facultyDropdownFilter');
-                const currentFacSelection = facDropdown.value;
-                facDropdown.innerHTML = '<option value="">All Faculty Members</option>';
-                Object.values(facultyAggregationMap).sort((a,b) => a.name.localeCompare(b.name)).forEach(fac => {
-                    facDropdown.innerHTML += `<option value="${fac.name.toLowerCase()}">${fac.name}</option>`;
-                });
-                if (currentFacSelection) facDropdown.value = currentFacSelection;
-                
-                // Always call filterAdminTable once data renders to execute rules cleanly
-                filterAdminTable();
-
-                document.getElementById('totalSubmissionsCount').innerText = allEntries.length;
-                document.getElementById('totalPointsSum').innerText = pointsAccumulator;
-                document.getElementById('uniqueFacultyCount').innerText = Object.keys(facultyAggregationMap).length;
+                // Fallback parsing checks if API strings container logic matches "Dumka" or "Ramgarh" implicitly 
+                buildDynamicSelectors();
+                renderScopedDashboard();
 
             } catch (err) {
                 console.error(err);
@@ -282,22 +196,151 @@ Here is your updated, fully integrated single-file code.
             }
         }
 
+        // Auto detect and build custom labels into selection dropdown configurations
+        function buildDynamicSelectors() {
+            const selector = document.getElementById('globalInstituteFilter');
+            const detectedColleges = new Set();
+            
+            masterDatabaseState.forEach(item => {
+                if(item.college) detectedColleges.add(item.college.trim());
+            });
+
+            // If colleges exist outside standard Dumka/Ramgarh options, map them automatically
+            detectedColleges.forEach(college => {
+                const lower = college.toLowerCase();
+                if (lower !== 'dumka' && lower !== 'ramgarh') {
+                    const opt = document.createElement('option');
+                    opt.value = lower;
+                    opt.textContent = `${college} Campus Records`;
+                    selector.appendChild(opt);
+                }
+            });
+        }
+
+        // MAIN HANDLER: Recalculates completely whenever global view scope toggles
+        function renderScopedDashboard() {
+            const selectedScope = document.getElementById('globalInstituteFilter').value;
+            const tbody = document.getElementById('adminMasterTableBody');
+            const facultyTbody = document.getElementById('facultyScoreTableBody');
+            
+            tbody.innerHTML = '';
+            facultyTbody.innerHTML = '';
+
+            // Update Header Display Text Contextually
+            const overviewTitle = document.getElementById('overviewTitle');
+            if(selectedScope === 'dumka') overviewTitle.innerHTML = "📊 System Overview: <strong>Dumka Campus</strong> Only";
+            else if(selectedScope === 'ramgarh') overviewTitle.innerHTML = "📊 System Overview: <strong>Ramgarh Campus</strong> Only";
+            else overviewTitle.innerHTML = "📊 Central System Overview: <strong>Global View</strong>";
+
+            // Step 1: Filter raw data according to selection target zone
+            const filteredEntries = masterDatabaseState.filter(item => {
+                if (!selectedScope) return true; // Global Mode
+                const itemCollege = (item.college || '').toLowerCase();
+                return itemCollege.includes(selectedScope);
+            });
+
+            if (filteredEntries.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">No registered entries found inside chosen zone bounds.</td></tr>';
+                facultyTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px;">No active data parameters matching.</td></tr>';
+                updateMetricWidgets(0, 0, 0);
+                return;
+            }
+
+            // Natural Sort matching Category String Order schemas
+            filteredEntries.sort((a, b) => {
+                const catA = (a.category || '').toLowerCase();
+                const catB = (b.category || '').toLowerCase();
+                return catA.localeCompare(catB, undefined, { numeric: true, sensitivity: 'base' });
+            });
+
+            let runningPointsTotal = 0;
+            const scopedFacultyMap = {};
+
+            // Step 2: Render data rows and aggregate statistical summaries live
+            filteredEntries.forEach(item => {
+                runningPointsTotal += parseInt(item.points || 0);
+                
+                const fId = item.facultyId || "Unknown";
+                const collegeName = item.college || "N/A";
+
+                if (!scopedFacultyMap[fId]) {
+                    scopedFacultyMap[fId] = {
+                        id: fId,
+                        name: item.facultyName || "Unknown Profile",
+                        dept: item.department || "N/A",
+                        college: collegeName,
+                        calculatedTotal: 0
+                    };
+                }
+                scopedFacultyMap[fId].calculatedTotal += parseInt(item.points || 0);
+
+                tbody.innerHTML += `
+                    <tr data-faculty-name="${(item.facultyName || '').toLowerCase()}">
+                        <td>${new Date(item.createdAt).toLocaleDateString()}</td>
+                        <td><span class="badge-faculty">${item.facultyName || 'Faculty Member'}</span></td>
+                        <td><small style="color:#64748b; font-weight:500;">${collegeName}</small></td>
+                        <td><strong style="font-size:12px;">${(item.department || 'N/A').toUpperCase()}</strong></td>
+                        <td style="color:#003366; font-weight:600;">${item.category || 'General'}</td>
+                        <td>
+                            <div><strong>${item.title}</strong></div>
+                            <small style="color:#64748b; font-style:italic;">${item.details || ''}</small>
+                        </td>
+                        <td><span class="badge-points">+${item.points}</span></td>
+                        <td style="text-align: right;">
+                            <button class="btn-action btn-delete" onclick="adminDeleteEntry(${item.id})">Remove Entry</button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            // Step 3: Populate Recalculated Leaderboard Cards
+            Object.values(scopedFacultyMap).sort((a,b) => b.calculatedTotal - a.calculatedTotal).forEach(fac => {
+                facultyTbody.innerHTML += `
+                    <tr>
+                        <td><code>FAC-${fac.id}</code></td>
+                        <td><strong>${fac.name}</strong></td>
+                        <td><span style="font-size: 13px; font-weight: bold; color: #475569;">${fac.dept.toUpperCase()}</span></td>
+                        <td><small style="color:#64748b;">${fac.college}</small></td>
+                        <td><span class="badge-total-score">${fac.calculatedTotal} Pts</span></td>
+                    </tr>
+                `;
+            });
+
+            // Step 4: Re-populate localized Faculty Filter Options Dropdown
+            const facDropdown = document.getElementById('facultyDropdownFilter');
+            const lastFacultySelection = facDropdown.value;
+            facDropdown.innerHTML = '<option value="">All Faculty Members</option>';
+            Object.values(scopedFacultyMap).sort((a,b) => a.name.localeCompare(b.name)).forEach(fac => {
+                facDropdown.innerHTML += `<option value="${fac.name.toLowerCase()}">${fac.name}</option>`;
+            });
+            if (lastFacultySelection) facDropdown.value = lastFacultySelection;
+
+            // Trigger structural content check mapping queries safely
+            filterAdminTable();
+
+            // Step 5: Update the Dashboard counters
+            updateMetricWidgets(filteredEntries.length, runningPointsTotal, Object.keys(scopedFacultyMap).length);
+        }
+
+        function updateMetricWidgets(submissions, points, faculties) {
+            document.getElementById('totalSubmissionsCount').innerText = submissions;
+            document.getElementById('totalPointsSum').innerText = points;
+            document.getElementById('uniqueFacultyCount').innerText = faculties;
+        }
+
         function filterAdminTable() {
             const searchQuery = document.getElementById('adminSearchInput').value.toLowerCase();
-            const selectedInstitute = document.getElementById('instituteDropdownFilter').value;
             const selectedFaculty = document.getElementById('facultyDropdownFilter').value;
             const rows = document.querySelectorAll('#adminMasterTableBody tr');
 
             rows.forEach(row => {
                 const textContent = row.innerText.toLowerCase();
                 const facultyAttr = row.getAttribute('data-faculty-name') || '';
-                const instituteAttr = row.getAttribute('data-institute-name') || '';
 
                 const matchesSearch = textContent.includes(searchQuery);
-                const matchesInstitute = selectedInstitute === "" || instituteAttr === selectedInstitute;
                 const matchesFaculty = selectedFaculty === "" || facultyAttr === selectedFaculty;
 
-                row.style.display = (matchesSearch && matchesInstitute && matchesFaculty) ? '' : 'none';
+                row.style.display = (matchesSearch && matchesFaculty) ? '' : 'none';
             });
         }
 
