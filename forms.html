@@ -133,6 +133,7 @@
                         <optgroup label="CATEGORY 1: Teaching and Duties">
                             <option value="cat1_direct">Direct Teaching (Lectures, Practicals, Contact Hours) (+10 pts)</option>
                             <option value="cat1_exam">Examination Duties (Question Paper Setting, Invigilation, Script Evaluation) (+5 pts)</option>
+                            <option value="cat1_admission">Admission Work (Telecalling, School Visit, Individual Admission Number, Other Activity) (+10 pts)</option>
                         </optgroup>
 
                         <optgroup label="CATEGORY 2: Co-Curricular & Professional Development">
@@ -257,8 +258,9 @@
             joint:       { none: 3.9, less_1: 5.4,  "1_3": 6.9,  "3_5": 8.4,  "6_10": 9.9,  more_10: 11.4 }
         };
 
+        // UPDATED: Added cat1_admission parameter mapping to point metric values
         const staticPointsMap = {
-            cat1_direct: 10, cat1_exam: 5,
+            cat1_direct: 10, cat1_exam: 5, cat1_admission: 10,
             cat2_discipline: 10, cat2_other: 10, cat2_extension: 5, cat2_admin: 20, cat2_committee: 15, cat2_professional: 10
         };
 
@@ -325,12 +327,10 @@
                 category: finalCategoryText,
                 title: title,
                 details: details,
-                // UPDATED: Rounded decimal values to whole numbers to meet strict PostgreSQL INTEGER column criteria
                 points: Math.round(finalPoints)
             };
 
             try {
-                // UPDATED: Exchanged the hardcoded localhost URL string for an asset relative routing configuration path
                 const response = await fetch('/api/submit-activity', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
