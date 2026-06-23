@@ -1,3 +1,13 @@
+Here is your updated, fully integrated single-file code.
+
+### Key Enhancements Made
+
+* 🏛️ **Institute Filter Dropdown:** Added a new dynamic dropdown filter next to the faculty filter to narrow logs down by college/institute.
+* 📋 **New Column in Action Logs:** Inserted a **College / Institute** column into the *Itemized Action Logs* table so you can track where entries originate at a glance.
+* 🔄 **Synchronized Filter Logic:** Updated the `filterAdminTable()` function to handle both search queries, faculty selections, and institute selections concurrently.
+* 🗃️ **Dynamic Option Aggregation:** The script now maps out unique institutes directly from your live API payload data to keep your dropdown filters current.
+
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -28,11 +38,11 @@
         h2 { color: var(--primary); margin: 0; display: flex; align-items: center; gap: 10px; }
         h3 { color: #334155; margin-top: 0; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; font-size: 18px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;}
         
-        /* Utility Controls (Search & Dropdown) */
-        .controls-row { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; }
-        .search-input { flex-grow: 1; padding: 10px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; outline: none; }
+        /* Utility Controls (Search & Dropdowns) */
+        .controls-row { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
+        .search-input { flex-grow: 1; padding: 10px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; outline: none; min-width: 200px; }
         .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,51,102,0.1); }
-        .filter-select { padding: 10px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; outline: none; background: white; min-width: 220px; cursor: pointer; }
+        .filter-select { padding: 10px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; outline: none; background: white; min-width: 200px; cursor: pointer; }
         .filter-select:focus { border-color: var(--primary); }
         
         /* Admin Interactive Summary Badges */
@@ -113,6 +123,11 @@
             <h3>📝 Itemized Action Logs</h3>
             <div class="controls-row">
                 <input type="text" id="adminSearchInput" class="search-input" placeholder="🔍 Filter logs by Title of Work..." onkeyup="filterAdminTable()">
+                
+                <select id="instituteDropdownFilter" class="filter-select" onchange="filterAdminTable()">
+                    <option value="">All Institutes / Colleges</option>
+                </select>
+
                 <select id="facultyDropdownFilter" class="filter-select" onchange="filterAdminTable()">
                     <option value="">All Faculty Members</option>
                 </select>
@@ -124,6 +139,7 @@
                         <tr>
                             <th>Submission Date</th>
                             <th>Faculty Member</th>
+                            <th>College / Institute</th>
                             <th>Department</th>
                             <th>Category</th>
                             <th>Title of Work</th>
@@ -133,7 +149,7 @@
                     </thead>
                     <tbody id="adminMasterTableBody">
                         <tr>
-                            <td colspan="7" style="text-align: center; padding: 25px; color: #94a3b8;">Loading central database index...</td>
+                            <td colspan="8" style="text-align: center; padding: 25px; color: #94a3b8;">Loading central database index...</td>
                         </tr>
                     </tbody>
                 </table>
@@ -166,12 +182,12 @@
                 facultyTbody.innerHTML = '';
 
                 if (allEntries.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px;">No registered entries found inside database logs.</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px;">No registered entries found inside database logs.</td></tr>';
                     facultyTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px;">No active profiles found.</td></tr>';
                     return;
                 }
 
-                // Sort items naturally by Category Serial string (e.g., CATG 1, CATG 2, Category 3...)
+                // Sort items naturally by Category Serial string
                 allEntries.sort((a, b) => {
                     const catA = (a.category || '').toLowerCase();
                     const catB = (b.category || '').toLowerCase();
@@ -180,26 +196,34 @@
 
                 let pointsAccumulator = 0;
                 const facultyAggregationMap = {};
+                const uniqueInstitutes = new Set();
 
                 allEntries.forEach(item => {
                     pointsAccumulator += parseInt(item.points || 0);
                     
                     const fId = item.facultyId || "Unknown";
+                    const collegeName = item.college || "N/A";
+                    
+                    if (item.college) {
+                        uniqueInstitutes.add(item.college);
+                    }
+
                     if (!facultyAggregationMap[fId]) {
                         facultyAggregationMap[fId] = {
                             id: fId,
                             name: item.facultyName || "Unknown Profile",
                             dept: item.department || "N/A",
-                            college: item.college || "N/A",
+                            college: collegeName,
                             calculatedTotal: 0
                         };
                     }
                     facultyAggregationMap[fId].calculatedTotal += parseInt(item.points || 0);
 
                     tbody.innerHTML += `
-                        <tr data-faculty-name="${(item.facultyName || '').toLowerCase()}">
+                        <tr data-faculty-name="${(item.facultyName || '').toLowerCase()}" data-institute-name="${collegeName.toLowerCase()}">
                             <td>${new Date(item.createdAt).toLocaleDateString()}</td>
                             <td><span class="badge-faculty">${item.facultyName || 'Faculty Member'}</span></td>
+                            <td><small style="color:#64748b; font-weight:500;">${collegeName}</small></td>
                             <td><strong style="font-size:12px;">${(item.department || 'N/A').toUpperCase()}</strong></td>
                             <td style="color:#003366; font-weight:600;">${item.category || 'General'}</td>
                             <td>
@@ -214,11 +238,7 @@
                     `;
                 });
 
-                // Populate Faculty Summary Table & Build Dropdown Filter Options Dynamically
-                const dropdown = document.getElementById('facultyDropdownFilter');
-                const currentSelection = dropdown.value;
-                dropdown.innerHTML = '<option value="">All Faculty Members</option>';
-
+                // Populate Faculty Summary Table
                 Object.values(facultyAggregationMap).forEach(fac => {
                     facultyTbody.innerHTML += `
                         <tr>
@@ -229,13 +249,25 @@
                             <td><span class="badge-total-score">${fac.calculatedTotal} Pts</span></td>
                         </tr>
                     `;
-
-                    dropdown.innerHTML += `<option value="${fac.name.toLowerCase()}">${fac.name}</option>`;
                 });
 
-                if (currentSelection) {
-                    dropdown.value = currentSelection;
-                }
+                // Dynamically Build Institute Dropdown Filter Options
+                const instDropdown = document.getElementById('instituteDropdownFilter');
+                const currentInstSelection = instDropdown.value;
+                instDropdown.innerHTML = '<option value="">All Institutes / Colleges</option>';
+                Array.from(uniqueInstitutes).sort().forEach(inst => {
+                    instDropdown.innerHTML += `<option value="${inst.toLowerCase()}">${inst}</option>`;
+                });
+                if (currentInstSelection) instDropdown.value = currentInstSelection;
+
+                // Dynamically Build Faculty Dropdown Filter Options
+                const facDropdown = document.getElementById('facultyDropdownFilter');
+                const currentFacSelection = facDropdown.value;
+                facDropdown.innerHTML = '<option value="">All Faculty Members</option>';
+                Object.values(facultyAggregationMap).sort((a,b) => a.name.localeCompare(b.name)).forEach(fac => {
+                    facDropdown.innerHTML += `<option value="${fac.name.toLowerCase()}">${fac.name}</option>`;
+                });
+                if (currentFacSelection) facDropdown.value = currentFacSelection;
                 
                 // Always call filterAdminTable once data renders to execute rules cleanly
                 filterAdminTable();
@@ -246,23 +278,26 @@
 
             } catch (err) {
                 console.error(err);
-                document.getElementById('adminMasterTableBody').innerHTML = '<tr><td colspan="7" style="color:red; text-align:center;">Endpoint verification error. Please check backend server online status.</td></tr>';
+                document.getElementById('adminMasterTableBody').innerHTML = '<tr><td colspan="8" style="color:red; text-align:center;">Endpoint verification error. Please check backend server online status.</td></tr>';
             }
         }
 
         function filterAdminTable() {
             const searchQuery = document.getElementById('adminSearchInput').value.toLowerCase();
+            const selectedInstitute = document.getElementById('instituteDropdownFilter').value;
             const selectedFaculty = document.getElementById('facultyDropdownFilter').value;
             const rows = document.querySelectorAll('#adminMasterTableBody tr');
 
             rows.forEach(row => {
                 const textContent = row.innerText.toLowerCase();
                 const facultyAttr = row.getAttribute('data-faculty-name') || '';
+                const instituteAttr = row.getAttribute('data-institute-name') || '';
 
                 const matchesSearch = textContent.includes(searchQuery);
-                const matchesDropdown = selectedFaculty === "" || facultyAttr === selectedFaculty;
+                const matchesInstitute = selectedInstitute === "" || instituteAttr === selectedInstitute;
+                const matchesFaculty = selectedFaculty === "" || facultyAttr === selectedFaculty;
 
-                row.style.display = (matchesSearch && matchesDropdown) ? '' : 'none';
+                row.style.display = (matchesSearch && matchesInstitute && matchesFaculty) ? '' : 'none';
             });
         }
 
@@ -289,3 +324,5 @@
     </script>
 </body>
 </html>
+
+```
