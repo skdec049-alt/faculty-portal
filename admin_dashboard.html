@@ -28,10 +28,12 @@
         h2 { color: var(--primary); margin: 0; display: flex; align-items: center; gap: 10px; }
         h3 { color: #334155; margin-top: 0; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; font-size: 18px; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px;}
         
-        /* Utility Controls (Search Bar) */
-        .controls-row { display: flex; gap: 15px; margin-bottom: 20px; }
+        /* Utility Controls (Search & Dropdown) */
+        .controls-row { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; }
         .search-input { flex-grow: 1; padding: 10px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; outline: none; }
         .search-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(0,51,102,0.1); }
+        .filter-select { padding: 10px 15px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 14px; outline: none; background: white; min-width: 220px; cursor: pointer; }
+        .filter-select:focus { border-color: var(--primary); }
         
         /* Admin Interactive Summary Badges */
         .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 25px; }
@@ -110,7 +112,10 @@
         <div class="admin-card">
             <h3>📝 Itemized Action Logs</h3>
             <div class="controls-row">
-                <input type="text" id="adminSearchInput" class="search-input" placeholder="🔍 Filter logs by Faculty Name, Department, Title of Work, or Category..." onkeyup="filterAdminTable()">
+                <input type="text" id="adminSearchInput" class="search-input" placeholder="🔍 Filter logs by Title of Work, or Category..." onkeyup="filterAdminTable()">
+                <select id="facultyDropdownFilter" class="filter-select" onchange="filterAdminTable()">
+                    <option value="">All Faculty Members</option>
+                </select>
             </div>
             
             <div style="overflow-x: auto;">
@@ -185,7 +190,7 @@
                     facultyAggregationMap[fId].calculatedTotal += parseInt(item.points || 0);
 
                     tbody.innerHTML += `
-                        <tr>
+                        <tr data-faculty-name="${(item.facultyName || '').toLowerCase()}">
                             <td>${new Date(item.createdAt).toLocaleDateString()}</td>
                             <td><span class="badge-faculty">${item.facultyName || 'Faculty Member'}</span></td>
                             <td><strong style="font-size:12px;">${(item.department || 'N/A').toUpperCase()}</strong></td>
@@ -202,6 +207,12 @@
                     `;
                 });
 
+                // Populate Faculty Summary Table & Build Dropdown Filter Options Dynamically
+                const dropdown = document.getElementById('facultyDropdownFilter');
+                // Save the current selection index to preserve selection across reloads if necessary
+                const currentSelection = dropdown.value;
+                dropdown.innerHTML = '<option value="">All Faculty Members</option>';
+
                 Object.values(facultyAggregationMap).forEach(fac => {
                     facultyTbody.innerHTML += `
                         <tr>
@@ -212,7 +223,16 @@
                             <td><span class="badge-total-score">${fac.calculatedTotal} Pts</span></td>
                         </tr>
                     `;
+
+                    // Add options to dropdown filter element
+                    dropdown.innerHTML += `<option value="${fac.name.toLowerCase()}">${fac.name}</option>`;
                 });
+
+                // Restore previous selection if it exists inside the newly loaded dataset
+                if (currentSelection) {
+                    dropdown.value = currentSelection;
+                    filterAdminTable();
+                }
 
                 document.getElementById('totalSubmissionsCount').innerText = allEntries.length;
                 document.getElementById('totalPointsSum').innerText = pointsAccumulator;
@@ -225,12 +245,19 @@
         }
 
         function filterAdminTable() {
-            const query = document.getElementById('adminSearchInput').value.toLowerCase();
+            const searchQuery = document.getElementById('adminSearchInput').value.toLowerCase();
+            const selectedFaculty = document.getElementById('facultyDropdownFilter').value;
             const rows = document.querySelectorAll('#adminMasterTableBody tr');
 
             rows.forEach(row => {
-                const text = row.innerText.toLowerCase();
-                row.style.display = text.includes(query) ? '' : 'none';
+                const textContent = row.innerText.toLowerCase();
+                const facultyAttr = row.getAttribute('data-faculty-name') || '';
+
+                // Matching logic checks both conditions concurrently (Dropdown AND Search Bar text matching)
+                const matchesSearch = textContent.includes(searchQuery);
+                const matchesDropdown = selectedFaculty === "" || facultyAttr === selectedFaculty;
+
+                row.style.display = (matchesSearch && matchesDropdown) ? '' : 'none';
             });
         }
 
@@ -250,7 +277,6 @@
             }
         }
 
-        // Added window level validation rules mapping to ensure form logs reset gracefully
         function logout() { 
             localStorage.clear(); 
             window.location.href = 'login.html'; 
