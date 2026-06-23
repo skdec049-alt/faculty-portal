@@ -1,8 +1,8 @@
-To achieve an **Institute-wide isolated view** where selecting a college completely updates the entire page context—including the **Top Statistics Dashboard**, the **Faculty Leaderboard**, and the **Itemized Logs**—we need to overhaul the filtering architecture.
+Here is your updated code. I have completely removed the dynamic detection engine and hardcoded the dropdown selector to support exactly your 4 specified campuses: **Dumka Engineering College**, **Ramgarh Engineering College**, **Chaibasa Engineering College**, and **Silli Polytechnic**.
 
-Instead of just hiding rows in the log table, the code below saves the raw API payload data globally and passes it through an **Institute Filter Layer** first. When you select **Dumka** or **Ramgarh**, the dashboard recalculates everything dynamically for that college only.
+The code uses relaxed text-matching (`.includes()`), meaning it will safely match your database entries even if they are stored as shorter names (like `"Dumka"` or `"Ramgarh"`) or their full formal titles.
 
-Here is the updated, complete single-file code:
+### Updated Component Code
 
 ```html
 <!DOCTYPE html>
@@ -38,7 +38,7 @@ Here is the updated, complete single-file code:
         /* Global Institute Switcher Styles */
         .institute-selector-card { background: linear-gradient(135deg, var(--primary) 0%, #002244 100%); color: white; }
         .institute-selector-card h2 { color: white; }
-        .global-select { padding: 12px 20px; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; font-size: 16px; font-weight: bold; outline: none; background: white; color: #1e293b; min-width: 280px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .global-select { padding: 12px 20px; border: 2px solid rgba(255,255,255,0.2); border-radius: 8px; font-size: 16px; font-weight: bold; outline: none; background: white; color: #1e293b; min-width: 320px; cursor: pointer; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
         
         /* Utility Controls (Search & Dropdowns) */
         .controls-row { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
@@ -85,6 +85,8 @@ Here is the updated, complete single-file code:
                     <option value="">All Institutes / Colleges (Global View)</option>
                     <option value="dumka">Dumka Engineering College</option>
                     <option value="ramgarh">Ramgarh Engineering College</option>
+                    <option value="chaibasa">Chaibasa Engineering College</option>
+                    <option value="silli">Silli Polytechnic</option>
                 </select>
             </div>
         </div>
@@ -186,8 +188,6 @@ Here is the updated, complete single-file code:
                 const res = await fetch(`/api/admin/reports/all?t=` + new Date().getTime());
                 masterDatabaseState = await res.json();
                 
-                // Fallback parsing checks if API strings container logic matches "Dumka" or "Ramgarh" implicitly 
-                buildDynamicSelectors();
                 renderScopedDashboard();
 
             } catch (err) {
@@ -196,30 +196,12 @@ Here is the updated, complete single-file code:
             }
         }
 
-        // Auto detect and build custom labels into selection dropdown configurations
-        function buildDynamicSelectors() {
-            const selector = document.getElementById('globalInstituteFilter');
-            const detectedColleges = new Set();
-            
-            masterDatabaseState.forEach(item => {
-                if(item.college) detectedColleges.add(item.college.trim());
-            });
-
-            // If colleges exist outside standard Dumka/Ramgarh options, map them automatically
-            detectedColleges.forEach(college => {
-                const lower = college.toLowerCase();
-                if (lower !== 'dumka' && lower !== 'ramgarh') {
-                    const opt = document.createElement('option');
-                    opt.value = lower;
-                    opt.textContent = `${college} Campus Records`;
-                    selector.appendChild(opt);
-                }
-            });
-        }
-
         // MAIN HANDLER: Recalculates completely whenever global view scope toggles
         function renderScopedDashboard() {
             const selectedScope = document.getElementById('globalInstituteFilter').value;
+            const selectElement = document.getElementById('globalInstituteFilter');
+            const selectedText = selectElement.options[selectElement.selectedIndex].text;
+            
             const tbody = document.getElementById('adminMasterTableBody');
             const facultyTbody = document.getElementById('facultyScoreTableBody');
             
@@ -228,9 +210,11 @@ Here is the updated, complete single-file code:
 
             // Update Header Display Text Contextually
             const overviewTitle = document.getElementById('overviewTitle');
-            if(selectedScope === 'dumka') overviewTitle.innerHTML = "📊 System Overview: <strong>Dumka Campus</strong> Only";
-            else if(selectedScope === 'ramgarh') overviewTitle.innerHTML = "📊 System Overview: <strong>Ramgarh Campus</strong> Only";
-            else overviewTitle.innerHTML = "📊 Central System Overview: <strong>Global View</strong>";
+            if(selectedScope) {
+                overviewTitle.innerHTML = `📊 System Overview: <strong>${selectedText}</strong> Only`;
+            } else {
+                overviewTitle.innerHTML = "📊 Central System Overview: <strong>Global View</strong>";
+            }
 
             // Step 1: Filter raw data according to selection target zone
             const filteredEntries = masterDatabaseState.filter(item => {
