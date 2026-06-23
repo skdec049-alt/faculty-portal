@@ -143,6 +143,7 @@
                             <option value="cat2_admin">Administrative Responsibility (Dean, Principal, Convener, Teacher-in-charge) (+20 pts)</option>
                             <option value="cat2_committee">Participation in Board of Studies, Academic & Administrative Committees (+15 pts)</option>
                             <option value="cat2_professional">Professional Development (FDP, Seminars, Conferences, Short-term Training) (+10 pts)</option>
+                            <option value="cat2_placement">Placement Activity (Placement Drive Conduction, Industry Liaisoning) (+15 pts)</option>
                         </optgroup>
 
                         <optgroup label="CATEGORY 3: Research and Publications">
@@ -258,10 +259,10 @@
             joint:       { none: 3.9, less_1: 5.4,  "1_3": 6.9,  "3_5": 8.4,  "6_10": 9.9,  more_10: 11.4 }
         };
 
-        // UPDATED: Added cat1_admission parameter mapping to point metric values
+        // UPDATED: Added cat2_placement parameter mapping inside staticPointsMap
         const staticPointsMap = {
             cat1_direct: 10, cat1_exam: 5, cat1_admission: 10,
-            cat2_discipline: 10, cat2_other: 10, cat2_extension: 5, cat2_admin: 20, cat2_committee: 15, cat2_professional: 10
+            cat2_discipline: 10, cat2_other: 10, cat2_extension: 5, cat2_admin: 20, cat2_committee: 15, cat2_professional: 10, cat2_placement: 15
         };
 
         document.addEventListener('DOMContentLoaded', () => {
