@@ -112,7 +112,7 @@
         <div class="admin-card">
             <h3>📝 Itemized Action Logs</h3>
             <div class="controls-row">
-                <input type="text" id="adminSearchInput" class="search-input" placeholder="🔍 Filter logs by Title of Work, or Category..." onkeyup="filterAdminTable()">
+                <input type="text" id="adminSearchInput" class="search-input" placeholder="🔍 Filter logs by Title of Work..." onkeyup="filterAdminTable()">
                 <select id="facultyDropdownFilter" class="filter-select" onchange="filterAdminTable()">
                     <option value="">All Faculty Members</option>
                 </select>
@@ -157,7 +157,7 @@
         async function loadMasterRecords() {
             try {
                 const res = await fetch(`/api/admin/reports/all?t=` + new Date().getTime());
-                const allEntries = await res.json();
+                let allEntries = await res.json();
 
                 const tbody = document.getElementById('adminMasterTableBody');
                 const facultyTbody = document.getElementById('facultyScoreTableBody');
@@ -170,6 +170,13 @@
                     facultyTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:15px;">No active profiles found.</td></tr>';
                     return;
                 }
+
+                // Sort items naturally by Category Serial string (e.g., CATG 1, CATG 2, Category 3...)
+                allEntries.sort((a, b) => {
+                    const catA = (a.category || '').toLowerCase();
+                    const catB = (b.category || '').toLowerCase();
+                    return catA.localeCompare(catB, undefined, { numeric: true, sensitivity: 'base' });
+                });
 
                 let pointsAccumulator = 0;
                 const facultyAggregationMap = {};
@@ -209,7 +216,6 @@
 
                 // Populate Faculty Summary Table & Build Dropdown Filter Options Dynamically
                 const dropdown = document.getElementById('facultyDropdownFilter');
-                // Save the current selection index to preserve selection across reloads if necessary
                 const currentSelection = dropdown.value;
                 dropdown.innerHTML = '<option value="">All Faculty Members</option>';
 
@@ -224,15 +230,15 @@
                         </tr>
                     `;
 
-                    // Add options to dropdown filter element
                     dropdown.innerHTML += `<option value="${fac.name.toLowerCase()}">${fac.name}</option>`;
                 });
 
-                // Restore previous selection if it exists inside the newly loaded dataset
                 if (currentSelection) {
                     dropdown.value = currentSelection;
-                    filterAdminTable();
                 }
+                
+                // Always call filterAdminTable once data renders to execute rules cleanly
+                filterAdminTable();
 
                 document.getElementById('totalSubmissionsCount').innerText = allEntries.length;
                 document.getElementById('totalPointsSum').innerText = pointsAccumulator;
@@ -253,7 +259,6 @@
                 const textContent = row.innerText.toLowerCase();
                 const facultyAttr = row.getAttribute('data-faculty-name') || '';
 
-                // Matching logic checks both conditions concurrently (Dropdown AND Search Bar text matching)
                 const matchesSearch = textContent.includes(searchQuery);
                 const matchesDropdown = selectedFaculty === "" || facultyAttr === selectedFaculty;
 
