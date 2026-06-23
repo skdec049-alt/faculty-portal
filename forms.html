@@ -130,11 +130,12 @@
                     <select id="activityCategory" onchange="toggleCategorySections(this.value)" required>
                         <option value="" disabled selected>Select an institutional metric...</option>
                         
+                        <!-- UPDATED: Added Subjectwise Course File Preparation inside Category 1 -->
                         <optgroup label="CATEGORY 1: Teaching and Duties">
                             <option value="cat1_direct">Direct Teaching (Lectures, Practicals, Contact Hours) (+10 pts)</option>
                             <option value="cat1_exam">Examination Duties (Question Paper Setting, Invigilation, Script Evaluation) (+5 pts)</option>
                             <option value="cat1_admission">Admission Work (Telecalling, School Visit, Individual Admission Number, Other Activity) (+10 pts)</option>
-                        <option value="cat2_placement">Placement Activity (Placement Drive Conduction, Industry Liaisoning) (+15 pts)</option>
+                            <option value="cat1_coursefile">Subjectwise Course File Preparation (+10 pts)</option>
                         </optgroup>
 
                         <optgroup label="CATEGORY 2: Co-Curricular & Professional Development">
@@ -144,7 +145,7 @@
                             <option value="cat2_admin">Administrative Responsibility (Dean, Principal, Convener, Teacher-in-charge) (+20 pts)</option>
                             <option value="cat2_committee">Participation in Board of Studies, Academic & Administrative Committees (+15 pts)</option>
                             <option value="cat2_professional">Professional Development (FDP, Seminars, Conferences, Short-term Training) (+10 pts)</option>
-                            
+                            <option value="cat2_placement">Placement Activity (Placement Drive Conduction, Industry Liaisoning) (+15 pts)</option>
                         </optgroup>
 
                         <optgroup label="CATEGORY 3: Research and Publications">
@@ -260,9 +261,9 @@
             joint:       { none: 3.9, less_1: 5.4,  "1_3": 6.9,  "3_5": 8.4,  "6_10": 9.9,  more_10: 11.4 }
         };
 
-        // UPDATED: Added cat2_placement parameter mapping inside staticPointsMap
+        // UPDATED: Added cat1_coursefile option to key-value structure
         const staticPointsMap = {
-            cat1_direct: 10, cat1_exam: 5, cat1_admission: 10,
+            cat1_direct: 10, cat1_exam: 5, cat1_admission: 10, cat1_coursefile: 10,
             cat2_discipline: 10, cat2_other: 10, cat2_extension: 5, cat2_admin: 20, cat2_committee: 15, cat2_professional: 10, cat2_placement: 15
         };
 
